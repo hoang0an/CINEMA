@@ -1,0 +1,130 @@
+260001|Dune: Hành Tinh Cát 2|Khoa học viễn tưởng|Denis Villeneuve|166|1|2026-10-20|20
+260002|Mai|Tâm lý, Tình cảm|Trấn Thành|120|1|2026-10-22|38
+260003|Lật Mặt 7: Một Điều Ước|Gia đình, Tâm lý|Lý Hải|138|1|2026-10-24|48
+260004|Nhà Bà Nữ|Gia đình, Hài kịch|Trấn Thành|102|2|2026-11-08|37
+260005|Bố Già|Gia đình, Tâm lý|Trấn Thành, Vũ Ngọc Đãng|128|2|2026-11-10|22
+260006|Đất Rừng Phương Nam|Phiêu lưu, Lịch sử|Nguyễn Quang Dũng|134|1|2026-10-26|50
+260007|Mắt Biếc|Lãng mạn, Tâm lý|Victor Vũ|117|0|2026-08-01|30
+260008|Tiệc Trăng Máu|Hài hước, Kịch tính|Nguyễn Quang Dũng|118|1|2026-10-27|50
+260009|Em Chưa 18|Hài hước, Lãng mạn|Lê Thanh Sơn|95|0|2026-08-01|30
+260010|Hai Phượng|Hành động, Võ thuật|Lê Văn Kiệt|98|0|2026-08-01|30
+260011|Cua Lại Vợ Bầu|Hài hước, Tình cảm|Nhất Trung|100|0|2026-08-01|30
+260012|Tôi Thấy Hoa Vàng Trên Cỏ Xanh|Tâm lý, Tuổi thơ|Victor Vũ|103|0|2026-08-01|30
+260013|Em Là Bà Nội Của Anh|Hài hước, Gia đình|Phan Gia Nhật Linh|127|0|2026-08-01|30
+260014|Lật Mặt 6: Tấm Vé Định Mệnh|Hành động, Hồi hộp|Lý Hải|132|0|2026-08-01|30
+260015|Lật Mặt: 48H|Hành động, Rượt đuổi|Lý Hải|110|0|2026-08-01|30
+260016|Lật Mặt: Nhà Có Khách|Kinh dị, Hài hước|Lý Hải|100|0|2026-08-01|30
+260017|Lật Mặt: Ba Chàng Khuyết|Hài hước, Phiêu lưu|Lý Hải|102|0|2026-08-01|30
+260018|Cô Ba Sài Gòn|Hài hước, Thời trang|Trần Bửu Lộc|100|0|2026-08-01|30
+260019|Quả Tim Máu|Kinh dị, Bí ẩn|Victor Vũ|97|0|2026-08-01|30
+260020|Người Vợ Cuối Cùng|Cổ trang, Tâm lý|Victor Vũ|132|0|2026-08-01|30
+260021|Gặp Lại Chị Bầu|Hài hước, Gia đình|Đoàn Nhất Trung|114|0|2026-08-01|30
+260022|Siêu Lừa Gặp Siêu Lầy|Hài hước, Tội phạm|Võ Thanh Hòa|112|0|2026-08-01|30
+260023|Chị Mười Ba: 3 Ngày Sinh Tử|Hành động, Hài kịch|Võ Thanh Hòa|97|0|2026-08-01|30
+260024|Nghề Siêu Dễ|Hài hước, Hành động|Võ Thanh Hòa|113|0|2026-08-01|30
+260025|Kẻ Ăn Hồn|Kinh dị, Cổ trang|Trần Hữu Tấn|109|0|2026-08-01|30
+260026|Chuyện Ma Gần Nhà|Kinh dị, Tâm linh|Trần Hữu Tấn|108|0|2026-08-01|30
+260027|Bắc Kim Thang|Kinh dị, Giật gân|Trần Hữu Tấn|100|0|2026-08-01|30
+260028|Ma Da|Kinh dị, Truyền thuyết|Nguyễn Hữu Hoàng|98|0|2026-08-01|30
+260029|Cám|Kinh dị, Cổ tích kỳ bí|Trần Hữu Tấn|122|0|2026-11-01|30
+260030|Làm Giàu Với Ma|Hài hước, Tâm linh|Trung Lùn|112|0|2026-11-02|30
+260031|Đêm Tối Rực Rỡ!|Tâm lý, Giật gân|Aaron Toronto|103|2|2026-11-11|19
+260032|Tro Tàn Rực Rỡ|Tâm lý, Chính kịch|Bùi Thạc Chuyên|116|2|2026-11-12|34
+260033|Song Lang|Tâm lý, Nghệ thuật cải lương|Leon Quang Lê|101|0|2026-08-01|30
+260034|Ròm|Tội phạm, Xã hội|Trần Thanh Huy|79|0|2026-08-01|30
+260035|Thưa Mẹ Con Đi|Tâm lý, Gia đình|Trịnh Đình Lê Minh|106|0|2026-08-01|30
+260036|Ngày Xưa Có Một Chuyện Tình|Lãng mạn, Hoài niệm|Trịnh Đình Lê Minh|135|2|2026-11-25|26
+260037|Em Và Trịnh|Tiểu sử, Âm nhạc|Phan Gia Nhật Linh|136|0|2026-08-01|30
+260038|Bẫy Ngọt Ngào|Tâm lý, Tình cảm|Đinh Hà Uyên Thư|90|0|2026-08-01|30
+260039|Con Nhót Mót Chồng|Hài hước, Gia đình|Vũ Ngọc Đãng|112|0|2026-08-01|30
+260040|Chị Chị Em Em 2|Tâm lý, Cổ trang|Vũ Ngọc Đãng|115|0|2026-08-01|30
+260041|Oppenheimer|Tiểu sử, Lịch sử, Kịch tính|Christopher Nolan|180|0|2026-08-01|30
+260042|Inception: Kẻ Trộm Giấc Mơ|Khoa học viễn tưởng, Hành động|Christopher Nolan|148|0|2026-08-01|30
+260043|Interstellar: Hố Đen Tử Thần|Khoa học viễn tưởng, Phiêu lưu|Christopher Nolan|169|0|2026-08-01|30
+260044|The Dark Knight: Kỵ Sĩ Bóng Đêm|Hành động, Tội phạm|Christopher Nolan|152|0|2026-08-01|30
+260045|The Dark Knight Rises|Hành động, Giật gân|Christopher Nolan|165|0|2026-08-01|30
+260046|Tenet: Nghịch Đảo Thời Gian|Hành động, Khoa học viễn tưởng|Christopher Nolan|150|0|2026-08-01|30
+260047|The Prestige: Ảo Thuật Gia Đấu Trí|Bí ẩn, Kịch tính|Christopher Nolan|130|0|2026-08-01|30
+260048|Avatar: Thế Thân|Khoa học viễn tưởng, Phiêu lưu|James Cameron|162|0|2026-08-01|30
+260049|Avatar: Dòng Chảy Của Nước|Khoa học viễn tưởng, Hành động|James Cameron|192|0|2026-08-01|30
+260050|Titanic: Con Tàu Định Mệnh|Lãng mạn, Thảm họa|James Cameron|195|0|2026-08-01|30
+260051|The Matrix: Ma Trận|Khoa học viễn tưởng, Võ thuật|Lana Wachowski|136|0|2026-08-01|30
+260052|Blade Runner 2049|Khoa học viễn tưởng, Trinh thá|Denis Villeneuve|164|0|2026-08-01|30
+260053|Arrival: Cuộc Đổ Bộ Bí Ẩn|Khoa học viễn tưởng, Kịch tính|Denis Villeneuve|116|0|2026-08-01|30
+260054|Sicario: Ranh Giới Sống Còn|Hành động, Tội phạm|Denis Villeneuve|121|0|2026-08-01|30
+260055|Gladiator: Võ Sĩ Giác Đấu|Hành động, Lịch sử|Ridley Scott|155|0|2026-08-01|30
+260056|Mad Max: Fury Road|Hành động, Hậu tận thế|George Miller|120|0|2026-08-01|30
+260057|Furiosa: Câu Chuyện Mad Max|Hành động, Phiêu lưu|George Miller|148|0|2026-08-01|30
+260058|Top Gun: Maverick|Hành động, Không quân|Joseph Kosinski|130|0|2026-08-01|30
+260059|John Wick 4|Hành động, Sát thủ|Chad Stahelski|169|0|2026-08-01|30
+260060|Mission: Impossible - Nghiệp Báo|Hành động, Điệp viên|Christopher McQuarrie|163|0|2026-08-01|30
+260061|The Batman: Người Dơi|Tội phạm, Bí ẩn, Hành động|Matt Reeves|176|0|2026-08-01|30
+260062|Joker|Tâm lý, Tội phạm|Todd Phillips|122|0|2026-08-01|30
+260063|Deadpool & Wolverine|Hành động, Hài hước, Siêu anh|Shawn Levy|128|0|2026-08-01|30
+260064|Avengers: Endgame|Hành động, Siêu anh hùng|Anthony & Joe Russo|181|0|2026-08-01|30
+260065|Avengers: Infinity War|Hành động, Viễn tưởng|Anthony & Joe Russo|149|0|2026-08-01|30
+260066|Spider-Man: No Way Home|Hành động, Đa vũ trụ|Jon Watts|148|0|2026-08-01|30
+260067|Iron Man: Người Sắt|Hành động, Khoa học viễn tưởng|Jon Favreau|126|0|2026-08-01|30
+260068|Captain America: Chiến Binh Mùa Đông|Hành động, Điệp viên|Anthony & Joe Russo|136|0|2026-08-01|30
+260069|Jurassic Park: Công Viên Kỷ Jura|Phiêu lưu, Khoa học viễn tưởng|Steven Spielberg|127|0|2026-08-01|30
+260070|Saving Private Ryan: Giải Cứu Binh Nhì Ryan|Chiến tranh, Lịch sử|Steven Spielberg|169|0|2026-08-01|30
+260071|The Conjuring: Ám Ảnh Kinh Hoàng|Kinh dị, Siêu nhiên|James Wan|112|0|2026-08-01|30
+260072|The Conjuring 2|Kinh dị, Quỷ ám|James Wan|134|0|2026-08-01|30
+260073|Insidious: Quỷ Quyệt|Kinh dị, Thế giới tâm linh|James Wan|103|0|2026-08-01|30
+260074|Saw: Lưỡi Cưa|Kinh dị, Đấu trí|James Wan|103|0|2026-08-01|30
+260075|A Quiet Place: Vùng Đất Câm Lặng|Kinh dị, Sinh tồn|John Krasinski|90|0|2026-08-01|30
+260076|Hereditary: Di Truyền|Kinh dị, Tâm lý|Ari Aster|127|0|2026-08-01|30
+260077|Midsommar: Lễ Hội Đẫm Máu|Kinh dị dân gian, Bí ẩn|Ari Aster|147|0|2026-08-01|30
+260078|Get Out: Trốn Thoát|Kinh dị, Bí ẩn xã hội|Jordan Peele|104|0|2026-08-01|30
+260079|The Shining: Khách Sạn Ma Ám|Kinh dị tâm lý|Stanley Kubrick|146|0|2026-08-01|30
+260080|IT: Chú Hề Ma Quái|Kinh dị, Siêu nhiên|Andy Muschietti|135|0|2026-08-01|30
+260081|Exhuma: Quật Mộ Trùng Ma|Kinh dị, Huyền bí, Tâm linh|Jang Jae-hyun|134|0|2026-08-01|30
+260082|The Medium: Âm Hồn Nhập Xác|Kinh dị giả tài liệu|Banjong Pisanthanakun|130|0|2026-08-01|30
+260083|Incantation: Chú Nguyền|Kinh dị, Found footage|Kevin Ko|110|0|2026-08-01|30
+260084|Pee Mak: Tình Người Duyên Ma|Kinh dị, Hài hước, Tình cảm|Banjong Pisanthanakun|115|0|2026-08-01|30
+260085|Train to Busan: Chuyến Tàu Sinh Tử|Hành động, Thây ma|Yeon Sang-ho|118|0|2026-08-01|30
+260086|Kung Fu Panda 4|Hoạt hình, Võ thuật, Hài hước|Mike Mitchell|94|0|2026-08-01|30
+260087|Inside Out 2: Những Mảnh Ghép Cảm Xúc|Hoạt hình, Gia đình|Kelsey Mann|96|0|2026-08-01|30
+260088|Coco: Vùng Đất Linh Hồn|Hoạt hình, Âm nhạc, Gia đình|Lee Unkrich|105|0|2026-08-01|30
+260089|Spider-Man: Vũ Trụ Mới|Hoạt hình, Siêu anh hùng|Bob Persichetti|117|0|2026-08-01|30
+260090|Spider-Man: Du Hành Vũ Trụ Nhện|Hoạt hình, Hành động|Joaquim Dos Santos|140|0|2026-08-01|30
+260091|Spirited Away: Vùng Đất Linh Hồn|Hoạt hình, Kỳ ảo|Hayao Miyazaki|125|0|2026-08-01|30
+260092|Howl's Moving Castle: Lâu Đài Bay Của Howl|Hoạt hình, Lãng mạn kỳ ảo|Hayao Miyazaki|119|0|2026-08-01|30
+260093|Princess Mononoke: Công Chúa Mononoke|Hoạt hình, Sử thi kỳ ảo|Hayao Miyazaki|134|0|2026-08-01|30
+260094|The Boy and the Heron: Thiếu Niên Và Chim Diệ|Hoạt hình, Phiêu lưu kỳ ảo|Hayao Miyazaki|124|0|2026-08-01|30
+260095|Your Name: Tên Cậu Là Gì?|Hoạt hình, Lãng mạn, Hoán đổi|Makoto Shinkai|107|0|2026-08-01|30
+260096|Suzume: Khóa Chặt Cửa Nào|Hoạt hình, Kỳ ảo, Phiêu lưu|Makoto Shinkai|122|0|2026-08-01|30
+260097|Demon Slayer: Chuyến Tàu Vô Tận|Hoạt hình, Hành động, Kiếm hiệ|Haruo Sotozaki|117|0|2026-08-01|30
+260098|The First Slam Dunk|Hoạt hình, Thể thao, Bóng rổ|Takehiko Inoue|124|0|2026-08-01|30
+260099|WALL-E: Robot Biết Yêu|Hoạt hình, Lãng mạn, Viễn tưởn|Andrew Stanton|98|0|2026-08-01|30
+260100|Up: Vút Bay|Hoạt hình, Phiêu lưu cảm động|Pete Docter|96|0|2026-08-01|30
+260101|Ratatouille: Chú Chuột Đầu Bếp|Hoạt hình, Ẩm thực hài hước|Brad Bird|111|0|2026-08-01|30
+260102|Zootopia: Phi Vụ Động Trời|Hoạt hình, Trinh thám hài hước|Byron Howard|108|0|2026-08-01|30
+260103|How to Train Your Dragon: Bí Kíp Luyện Rồng|Hoạt hình, Phiêu lưu|Dean DeBlois|98|0|2026-08-01|30
+260104|The Lion King: Vua Sư Tử|Hoạt hình, Ca nhạc kịch|Roger Allers|88|0|2026-08-01|30
+260105|Frozen 2: Nữ Hoàng Băng Giá|Hoạt hình, Âm nhạc phiêu lưu|Chris Buck|103|0|2026-08-01|30
+260106|Parasite: Ký Sinh Trùng|Hài đen, Giật gân, Xã hội|Bong Joon-ho|132|0|2026-08-01|30
+260107|Memories of Murder: Hồi Ức Kẻ Sát Nhân|Tội phạm, Trinh thám|Bong Joon-ho|131|0|2026-08-01|30
+260108|The Shawshank Redemption: Nhà Tù Shawshank|Tâm lý, Vượt ngục|Frank Darabont|142|0|2026-08-01|30
+260109|The Godfather: Bố Già|Tội phạm, Xã hội đen|Francis Ford Coppola|175|0|2026-08-01|30
+260110|Pulp Fiction: Chuyện Tào Lao|Tội phạm, Hài đen|Quentin Tarantino|154|0|2026-08-01|30
+260111|Django Unchained: Hành Trình Giải Cứu|Hành động miền Tây|Quentin Tarantino|165|0|2026-08-01|30
+260112|Forrest Gump: Cuộc Đời Kỳ Lạ|Tâm lý, Lãng mạn, Lịch sử|Robert Zemeckis|142|0|2026-08-01|30
+260113|Fight Club: Sàn Đấu Sinh Tử|Tâm lý, Bí ẩn|David Fincher|139|0|2026-08-01|30
+260114|Se7en: Bảy Tội Lỗi Chết Người|Tội phạm, Trinh thám rùng rợn|David Fincher|127|0|2026-08-01|30
+260115|Gone Girl: Cô Gái Mất Tích|Bí ẩn, Giật gân tâm lý|David Fincher|149|0|2026-08-01|30
+260116|Shutter Island: Đảo Kinh Hoàng|Bí ẩn tâm lý, Giật gân|Martin Scorsese|138|0|2026-08-01|30
+260117|The Wolf of Wall Street: Sói Già Phố Wall|Hài kịch đen, Tiểu sử|Martin Scorsese|180|0|2026-08-01|30
+260118|La La Land: Những Kẻ Khờ Mộng Mơ|Ca nhạc kịch, Lãng mạn|Damien Chazelle|128|0|2026-08-01|30
+260119|Whiplash: Tay Trống Cự Phách|Tâm lý, Âm nhạc|Damien Chazelle|106|0|2026-08-01|30
+260120|Grand Budapest Hotel: Khách Sạn Đế Vương|Hài kịch phiêu lưu|Wes Anderson|99|0|2026-08-01|30
+260121|The Truman Show: Trò Đùa Số Phận|Tâm lý xã hội, Hài hước|Peter Weir|103|0|2026-08-01|30
+260122|Good Will Hunting: Chàng Will Tốt Bụng|Tâm lý, Giáo dục cảm động|Gus Van Sant|126|0|2026-08-01|30
+260123|Everything Everywhere All at Once|Khoa học viễn tưởng, Hài kịch|Daniel Kwan, Daniel Schei|139|0|2026-08-01|30
+260124|In the Mood for Love: Tâm Trạng Khi Yêu|Lãng mạn, Nghệ thuật|Vương Gia Vệ|98|0|2026-08-01|30
+260125|Chungking Express: Trùng Khánh Sâm Lâm|Lãng mạn, Đời sống|Vương Gia Vệ|102|0|2026-08-01|30
+260126|Crouching Tiger, Hidden Dragon: Ngọa Hổ Tàng|Võ hiệp, Lãng mạn|Lý An|120|0|2026-08-01|30
+260127|Life of Pi: Cuộc Đời Của Pi|Phiêu lưu, Tâm linh|Lý An|127|0|2026-08-01|30
+260128|IP Man: Diệp Vấn|Võ thuật, Tiểu sử|Diệp Vĩ Tín|106|0|2026-08-01|30
+260129|Bad Genius: Thiên Tài Bất Hảo|Học đường, Gian lận giật gân|Nattawut Poonpiriya|130|0|2026-08-01|30
+260130|How to Make Millions Before Grandma Dies|Gia đình, Cảm động|Pat Boonnitipat|127|0|2026-08-01|30

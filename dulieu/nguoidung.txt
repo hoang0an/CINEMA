@@ -1,0 +1,4 @@
+AD01|admin|admin123|Quản Trị Viên Hệ Thống|ADMIN|Hệ thống|Hệ thống|Hệ thống
+NV01|nhanvien1|123456|Nguyễn Văn An|NHANVIEN|000000000001|0900000001|12 Đường Mẫu A, Phường Minh Họa, Đà Nẵng
+NV02|nhanvien2|123456|Trần Thị Bình|NHANVIEN|000000000002|0900000002|28 Đường Mẫu B, Phường Minh Họa, Đà Nẵng
+NV03|nhanvien3|123456|Nguyễn Chat GPT|NHANVIEN|123456789101|0898083694|123 lê duẫn đà nẵng

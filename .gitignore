@@ -1,0 +1,27 @@
+# Generated build outputs
+*.exe
+*.dll
+*.o
+*.obj
+*.pdb
+*.ilk
+*.a
+*.lib
+*.log
+/build/
+/.cache/
+/scratch/
+/.vscode/
+__pycache__/
+*.pyc
+
+# Local backups and recovery state; preserve locally
+*.zip
+*.bak
+*.tmp
+*.blocked
+
+# Local configuration
+.env
+.env.*
+!.env.example
