@@ -1,5 +1,6 @@
 #ifndef QUANLYFILE_H
 #define QUANLYFILE_H
+#include "GhiFileAnToan.h"
 
 #include "../cautruc/DanhSachLienKet.h"
 #include "../giaodien/TienIchConsole.h"
@@ -13,6 +14,7 @@
 #include <cstddef>
 #include <fstream>
 #include <sstream>
+#include <set>
 #include <string>
 
 class QuanLyFile {
@@ -198,11 +200,7 @@ public:
 
   static bool ghiDanhSachPhim(const std::string &duongDan,
                               const DanhSachLienKet<Phim> &dsPhim) {
-    std::ofstream file(duongDan);
-
-    if (!file.is_open()) {
-      return false;
-    }
+    return ghiFileAnToan(duongDan, [&](std::ostream &file) {
 
     Nut<Phim> *hienTai = dsPhim.layDau();
     while (hienTai != nullptr) {
@@ -213,12 +211,11 @@ public:
            << hienTai->duLieu.layThoiLuong() << "|"
            << hienTai->duLieu.layTrangThai() << "|"
            << hienTai->duLieu.layNgayKhoiChieu() << "|"
-           << hienTai->duLieu.laySoNgayChieu() << "\n";
+           << hienTai->duLieu.laySoNgayChieu() << "|days-v2\n";
       hienTai = hienTai->tiepTheo;
     }
 
-    file.close();
-    return !file.fail();
+    });
   }
 
   // Đọc danh sách phim với Màng Lọc Phòng Thủ 3 Tầng Toàn Diện (Defensive Ingestion Pipeline):
@@ -255,7 +252,8 @@ public:
       }
       std::getline(ss, chuoiTrangThai, '|');
       std::getline(ss, chuoiNgayKC, '|');
-      std::getline(ss, chuoiSoNgayChieu);
+      std::getline(ss, chuoiSoNgayChieu, '|');
+      std::string phienBan; std::getline(ss, phienBan);
 
       // TẦNG 1: Khử ký tự điều khiển và chuẩn hóa khoảng trắng thừa
       maPhim = trim(khuKyTuDieuKhien(maPhim));
@@ -322,6 +320,9 @@ public:
         } catch (...) {}
       }
 
+      // Dữ liệu cũ lưu khoảng cách ngày; giữ nguyên ngày cuối khi chuyển sang số ngày.
+      if (phienBan != "days-v2") ++soNgayChieu;
+
       // TẦNG 3: Kẹp biên an toàn (Bounds Clamping) chống tràn dữ liệu giao diện
       tenPhim = TienIchConsole::catChuoi(tenPhim, 45);
       theLoai = TienIchConsole::catChuoi(theLoai, 30);
@@ -356,6 +357,8 @@ public:
     if (!file.is_open()) {
       return false;
     }
+    bool hopLe = true;
+    std::set<std::string> maDaCo;
     std::string dong;
     while (std::getline(file, dong)) {
       if (!dong.empty() && dong.back() == '\r') {
@@ -376,7 +379,7 @@ public:
           !std::getline(ss, tenPhong, '|') ||
           !std::getline(ss, chuoiSoHang, '|') ||
           !std::getline(ss, chuoiSoCot, '|')) {
-        continue;
+        hopLe = false; continue;
       }
       std::getline(ss, chuoiGhe);
 
@@ -385,14 +388,15 @@ public:
         size_t n=0;
         soHang = std::stoi(chuoiSoHang,&n); if(n!=chuoiSoHang.size()) throw 0;
         soCot = std::stoi(chuoiSoCot,&n); if(n!=chuoiSoCot.size()) throw 0;
-      } catch (...) { std::cerr << "Invalid room: " << maSC << "\n"; continue; }
+      } catch (...) { std::cerr << "Invalid room: " << maSC << "\n"; hopLe = false; continue; }
       bool gioHopLe = gioChieu.size()==5 && gioChieu[2]==':' &&
         gioChieu[0]>='0' && gioChieu[0]<='2' && gioChieu[1]>='0' && gioChieu[1]<='9' &&
         gioChieu[3]>='0' && gioChieu[3]<='5' && gioChieu[4]>='0' && gioChieu[4]<='9' && gioChieu.substr(0,2)<="23";
       std::tm parsed{};
       if (!gioHopLe || soHang < 1 || soHang > 26 || soCot < 1 || soCot > 100 ||
-          !TienIchNgay::phanTichISO(ngayChieu, parsed)) {
-        std::cerr << "Invalid show: " << maSC << "\n"; continue;
+          !TienIchNgay::phanTichISO(ngayChieu, parsed) || maSC.empty() || !maDaCo.insert(maSC).second ||
+          chuoiGhe.size() != static_cast<size_t>(soHang * soCot) || chuoiGhe.find_first_not_of("01") != std::string::npos) {
+        std::cerr << "Invalid show: " << maSC << "\n"; hopLe = false; continue;
       }
 
       SuatChieu *sc = new SuatChieu(maSC, maPhim, tenPhim, ngayChieu, gioChieu,
@@ -403,16 +407,13 @@ public:
       dsSuatChieu.themCuoi(sc);
     }
     file.close();
-    return !file.bad();
+    return hopLe && !file.bad();
   }
 
   // Ghi danh sách suất chiếu và toàn bộ trạng thái ghế vào file dulieu/suatchieu.txt
   static bool ghiDanhSachSuatChieu(const std::string &duongDan,
                                    const DanhSachLienKet<SuatChieu *> &dsSuatChieu) {
-    std::ofstream file(duongDan);
-    if (!file.is_open()) {
-      return false;
-    }
+    return ghiFileAnToan(duongDan, [&](std::ostream &file) {
     Nut<SuatChieu *> *hienTai = dsSuatChieu.layDau();
     while (hienTai != nullptr) {
       SuatChieu *sc = hienTai->duLieu;
@@ -430,8 +431,7 @@ public:
       }
       hienTai = hienTai->tiepTheo;
     }
-    file.close();
-    return !file.fail();
+    });
   }
 
   static bool docDanhSachNguoiDung(const std::string &duongDan,
@@ -482,10 +482,7 @@ public:
 
   static bool ghiDanhSachNguoiDung(const std::string &duongDan,
                                    const DanhSachLienKet<NguoiDung *> &dsNguoiDung) {
-    std::ofstream file(duongDan);
-    if (!file.is_open()) {
-      return false;
-    }
+    return ghiFileAnToan(duongDan, [&](std::ostream &file) {
 
     Nut<NguoiDung *> *hienTai = dsNguoiDung.layDau();
     while (hienTai != nullptr) {
@@ -502,8 +499,7 @@ public:
       }
       hienTai = hienTai->tiepTheo;
     }
-    file.close();
-    return !file.fail();
+    });
   }
 };
 

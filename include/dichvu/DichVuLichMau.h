@@ -14,6 +14,7 @@ class DichVuLichMau {
 private:
   std::vector<CaTrucMau> dsCaMau;
   std::string duongDanFile;
+  bool duLieuHopLe = true;
 
 public:
   DichVuLichMau(const std::string &duongDan = "dulieu/catruc_mau.txt") : duongDanFile(duongDan) {}
@@ -48,13 +49,14 @@ public:
 
   bool docDanhSach(const std::string &duongDan, const std::vector<std::string> &dsMaNV = {}) {
     duongDanFile = duongDan;
+    const auto truoc = dsCaMau;
     dsCaMau.clear();
     std::ifstream file(duongDan);
     if (!file.is_open()) {
       khoiTaoMauMacDinh(dsMaNV);
-      ghiDanhSach(duongDan);
-      return true;
+      return ghiDanhSach(duongDan);
     }
+    duLieuHopLe = false;
 
     std::string dong;
     while (std::getline(file, dong)) {
@@ -69,31 +71,35 @@ public:
       while (std::getline(ss, token, '|')) {
         tokens.push_back(token);
       }
-      if (tokens.size() < 5) continue;
+      if (tokens.size() != 5) { dsCaMau = truoc; return false; }
 
       try {
-        int thu = std::stoi(tokens[0]);
+        size_t n = 0; int thu = std::stoi(tokens[0], &n);
+        if (n != tokens[0].size() || thu < 2 || thu > 8) throw 0;
         std::string tenCa = tokens[1];
         std::string gioBD = tokens[2];
         std::string gioKT = tokens[3];
         std::string maNV = tokens[4];
+        if (!TienIchNgay::kiemTraDinhDangGio(gioBD) || !TienIchNgay::kiemTraDinhDangGio(gioKT) || gioBD >= gioKT ||
+            tenCa.empty() || maNV.empty() || timCaMau(thu, tenCa)) throw 0;
+        if (!dsMaNV.empty() && maNV != "TRONG" && std::find(dsMaNV.begin(), dsMaNV.end(), maNV) == dsMaNV.end()) throw 0;
         dsCaMau.emplace_back(thu, tenCa, gioBD, gioKT, maNV);
-      } catch (...) {}
+      } catch (...) { dsCaMau = truoc; return false; }
     }
     file.close();
+    if (file.bad()) { dsCaMau = truoc; return false; }
+    duLieuHopLe = true;
 
     if (dsCaMau.empty()) {
       khoiTaoMauMacDinh(dsMaNV);
-      ghiDanhSach(duongDan);
+      return ghiDanhSach(duongDan);
     }
     return true;
   }
 
   bool ghiDanhSach(const std::string &duongDan) const {
-    std::ofstream file(duongDan);
-    if (!file.is_open()) {
-      return false;
-    }
+    if (!duLieuHopLe) return false;
+    return ghiFileAnToan(duongDan, [&](std::ostream &file) {
 
     for (const auto &c : dsCaMau) {
       file << c.layThu() << "|"
@@ -102,8 +108,7 @@ public:
            << QuanLyFile::khuKyTuPhanCach(c.layGioKetThuc()) << "|"
            << QuanLyFile::khuKyTuPhanCach(c.layMaNV()) << "\n";
     }
-    file.close();
-    return true;
+    });
   }
 
   CaTrucMau *timCaMau(int thu, const std::string &tenCa) {
@@ -129,8 +134,10 @@ public:
   bool capNhatPhanCong(int thu, const std::string &tenCa, const std::string &maNVMoi) {
     CaTrucMau *c = timCaMau(thu, tenCa);
     if (c == nullptr) return false;
+    const auto cu = *c;
     c->ganNhanVien(maNVMoi);
-    return ghiDanhSach(duongDanFile);
+    if (ghiDanhSach(duongDanFile)) return true;
+    *c = cu; return false;
   }
 
   // Áp dụng Lịch tuần chuẩn vào một tuần thực tế (ngayT2DauTuan là Thứ Hai YYYY-MM-DD)
@@ -169,28 +176,10 @@ public:
     return soCaTaoMoi;
   }
 
-  // Lưu cách bố trí thực tế của một tuần cụ thể thành Lịch tuần chuẩn mới
-  int luuTuanHienTaiLamMau(const std::string &ngayT2DauTuan, const DichVuCaTruc &dvCa) {
-    int soCaCapNhat = 0;
-
-    for (int thu = 2; thu <= 8; thu++) {
-      int offsetNgay = thu - 2;
-      std::string targetDate = TienIchNgay::congNgay(ngayT2DauTuan, offsetNgay);
-      std::vector<CaTruc> dsCaThucTe = dvCa.layDanhSachCaTheoNgay(targetDate);
-
-      for (const auto &caTT : dsCaThucTe) {
-        CaTrucMau *cm = timCaMau(thu, caTT.layTenCa());
-        if (cm != nullptr) {
-          cm->ganNhanVien(caTT.layMaNVThucTe());
-          soCaCapNhat++;
-        }
-      }
-    }
-
-    if (soCaCapNhat > 0) {
-      ghiDanhSach(duongDanFile);
-    }
-    return soCaCapNhat;
+  bool coThamChieuNhanVien(const std::string &ma) const {
+    if (!duLieuHopLe) return true;
+    for (const auto &ca : dsCaMau) if (ca.layMaNV() == ma) return true;
+    return false;
   }
 
   // Đếm số ca còn trống (chưa phân công nhân viên) trong Lịch tuần chuẩn

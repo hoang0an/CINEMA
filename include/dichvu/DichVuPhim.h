@@ -168,7 +168,13 @@ public:
     return true;
   }
 
-  bool themPhim(const Phim &p) {
+  bool themPhim(const Phim &dauVao) {
+    Phim p = dauVao;
+    std::tm date{};
+    if (!TienIchNgay::phanTichISO(p.layNgayKhoiChieu(), date) || p.layThoiLuong() < 1 ||
+        p.layThoiLuong() > 600 || p.laySoNgayChieu() < 1 || p.laySoNgayChieu() > 365 ||
+        p.layTrangThai() < 0 || p.layTrangThai() > 2) return false;
+    p.dongBoTrangThaiThoiGianThuc(TienIchNgay::layNgayHienTaiISO());
     if (timPhimTheoMa(p.layMaPhim()) != nullptr) {
       return false;
     }
@@ -189,7 +195,7 @@ public:
 
   std::function<bool(const std::string&)> coLichTuongLai;
   std::function<bool(const std::string&, const std::string&)> coLichSauNgay;
-  std::function<void(const std::string&, const std::string&)> onDoiTenPhim;
+  std::function<bool(const std::string&, const std::string&)> onDoiTenPhim;
 
   bool xoaPhim(const std::string &maPhim) {
     if (!coLichTuongLai || coLichTuongLai(maPhim)) return false;
@@ -208,11 +214,7 @@ public:
         !QuanLyFile::kiemTraTheLoaiHopLe(theLoai) || !QuanLyFile::kiemTraDaoDienHopLe(daoDien) ||
         thoiLuong < 1 || thoiLuong > 600 || ten.size()>180 || theLoai.size()>120 || daoDien.size()>100) return false;
     if (thoiLuong != p->layThoiLuong() && (!coLichTuongLai || coLichTuongLai(ma))) return false;
-    std::string tenCu = p->layTenPhim();
     *p = Phim(ma,ten,theLoai,daoDien,thoiLuong,p->layTrangThai(),p->layNgayKhoiChieu(),p->laySoNgayChieu());
-    if (ten != tenCu && onDoiTenPhim) {
-      onDoiTenPhim(ma, ten);
-    }
     return true;
   }
 
@@ -483,11 +485,15 @@ public:
         }
         if (!suaMotPhanThongTinPhim(ma,ten,loai,dd,tl,hetDot)) {
           TienIchConsole::hienThiLoi("Dữ liệu không hợp lệ hoặc thay đổi xung đột lịch đã xếp.");
-          TienIchConsole::hienThiLoi("Hết đợt phải sau khởi chiếu (tối đa 365 ngày); không rút ngắn qua suất còn tồn tại.");
+          TienIchConsole::hienThiLoi("Hết đợt không được trước khởi chiếu (tối đa 365 ngày); không rút ngắn qua suất còn tồn tại.");
           TienIchConsole::choPhimBatKy(); continue;
         }
         if (!QuanLyFile::ghiDanhSachPhim("dulieu/phim.txt",dsPhim)) {
           *p=cu; TienIchConsole::hienThiLoi("Lưu thất bại!"); Sleep(1200); continue;
+        }
+        if (onDoiTenPhim && p->layTenPhim() != cu.layTenPhim() && !onDoiTenPhim(ma, p->layTenPhim())) {
+          TienIchConsole::hienThiLoi("Đã lưu phim nhưng chưa đồng bộ được tên trong lịch. Bán vé bị khóa; kiểm tra file và mở lại ứng dụng.");
+          TienIchConsole::choPhimBatKy(); continue;
         }
         if (dangTimKiem) dsKetQua=timKiemPhim(tuKhoa);
         TienIchConsole::hienThiThanhCong("Đã sửa thông tin phim!"); Sleep(1000);
@@ -654,10 +660,15 @@ public:
             std::string xacNhan;
             std::getline(std::cin, xacNhan);
             if (xacNhan == "y" || xacNhan == "Y") {
+              const auto truoc = dsPhim;
               if (!xoaPhim(trimmedMa)) {
                 TienIchConsole::hienThiLoi("Không thể xóa phim còn suất tương lai!"); Sleep(1500); continue;
               }
-              QuanLyFile::ghiDanhSachPhim("dulieu/phim.txt", dsPhim);
+              if (!QuanLyFile::ghiDanhSachPhim("dulieu/phim.txt", dsPhim)) {
+                dsPhim = truoc;
+                TienIchConsole::hienThiLoi("Không lưu được thay đổi. Phim chưa bị xóa.");
+                TienIchConsole::choPhimBatKy(); continue;
+              }
               if (dangTimKiem) {
                 dsKetQua = timKiemPhim(tuKhoa);
               }

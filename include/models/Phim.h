@@ -47,7 +47,7 @@ public:
   int laySoNgayChieu() const { return soNgayChieu; }
 
   std::string layNgayKetThuc() const {
-    return TienIchNgay::congNgay(ngayKhoiChieu, soNgayChieu);
+    return TienIchNgay::congNgay(ngayKhoiChieu, soNgayChieu - 1);
   }
 
   std::string layChuoiTrangThai() const {
@@ -78,8 +78,8 @@ public:
     std::tm a{},b{};
     if (!TienIchNgay::phanTichISO(ngayKhoiChieu,a) || !TienIchNgay::phanTichISO(iso,b)) return false;
     const int span=TienIchNgay::khoangCachNgay(ngayKhoiChieu,iso);
-    if (span<1 || span>365) return false;
-    soNgayChieu=span; return true; // Giữ định dạng file hiện tại: start + span = ngày cuối.
+    if (span<0 || span>=365) return false;
+    soNgayChieu=span + 1; return true; // Tính cả ngày đầu và ngày cuối.
   }
 
   bool setThoiLuong(int tl) {
@@ -103,7 +103,7 @@ public:
     if (kc < 0) {
       return 2; // Sắp chiếu
     }
-    if (kc >= 0 && kc <= soNgayChieu) {
+    if (kc >= 0 && kc < soNgayChieu) {
       return 1; // Đang chiếu
     }
     return 0; // Ngừng chiếu (quá hạn)

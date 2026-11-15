@@ -18,6 +18,7 @@ class DichVuCaTruc {
 private:
   std::vector<CaTruc> dsCaTruc;
   std::string duongDanFile;
+  bool duLieuHopLe = true;
   const double DON_GIA_CA_MAC_DINH = 200000.0; // 200.000 VNĐ một ca trực 5 tiếng
 
 public:
@@ -28,10 +29,12 @@ public:
 
   bool docDanhSach(const std::string &duongDan) {
     duongDanFile = duongDan;
+    const auto truoc = dsCaTruc;
     dsCaTruc.clear();
+    duLieuHopLe = false;
     std::ifstream file(duongDan);
     if (!file.is_open()) {
-      return false;
+      dsCaTruc = truoc; return false;
     }
 
     std::string dong;
@@ -47,7 +50,7 @@ public:
       while (std::getline(ss, token, '|')) {
         tokens.push_back(token);
       }
-      if (tokens.size() < 7) { std::cerr << "Invalid shift row: " << dong << "\n"; continue; }
+      if (tokens.size() < 7 || tokens.size() > 9) { dsCaTruc = truoc; return false; }
 
       std::string maCa = tokens[0];
       std::string ngay = tokens[1];
@@ -64,7 +67,8 @@ public:
         if (!TienIchNgay::kiemTraDinhDangGio(gioBD) || !TienIchNgay::kiemTraDinhDangGio(gioKT) || gioBD >= gioKT) throw 0;
         std::tm t{};
         if (!std::isfinite(doanhThu) || doanhThu < 0 || ttLuong < 0 || ttLuong > 1 || !TienIchNgay::phanTichISO(ngay,t)) throw 0;
-      } catch (...) { std::cerr << "Invalid shift: " << maCa << "\n"; continue; }
+        if (maCa.empty() || layCaTheoMa(maCa)) throw 0;
+      } catch (...) { std::cerr << "Invalid shift: " << maCa << "\n"; dsCaTruc = truoc; return false; }
 
       // Chuẩn hóa và bảo vệ tài chính: Ca trực trong tương lai chưa diễn ra nên không thể thanh toán trước
       std::string ngayHienTai = TienIchNgay::layNgayHienTaiISO();
@@ -75,11 +79,14 @@ public:
       dsCaTruc.emplace_back(maCa, ngay, tenCa, gioBD, gioKT, nvPhanCong, nvThucTe, doanhThu, ttLuong);
     }
     file.close();
+    if (file.bad()) { dsCaTruc = truoc; return false; }
+    duLieuHopLe = true;
     return true;
   }
 
   // Vệ sinh trạng thái tài chính của các ca tương lai (đảm bảo không ca tương lai nào bị đánh dấu đã thanh toán)
   int veSinhTrangThaiCaTuongLai() {
+    const auto truoc = dsCaTruc;
     std::string ngayHienTai = TienIchNgay::layNgayHienTaiISO();
     int dem = 0;
     for (auto &ca : dsCaTruc) {
@@ -89,16 +96,14 @@ public:
       }
     }
     if (dem > 0) {
-      ghiDanhSach(duongDanFile);
+      if (!ghiDanhSach(duongDanFile)) { dsCaTruc = truoc; return -1; }
     }
     return dem;
   }
 
   bool ghiDanhSach(const std::string &duongDan) const {
-    std::ofstream file(duongDan);
-    if (!file.is_open()) {
-      return false;
-    }
+    if (!duLieuHopLe) return false;
+    return ghiFileAnToan(duongDan, [&](std::ostream &file) {
 
     for (const auto &ca : dsCaTruc) {
       file << QuanLyFile::khuKyTuPhanCach(ca.layMaCa()) << "|"
@@ -111,66 +116,7 @@ public:
            << (long long)ca.layDoanhThu() << "|"
            << ca.layTrangThaiLuong() << "\n";
     }
-    file.close();
-    return true;
-  }
-
-  // Khởi tạo lịch ca mẫu nếu file chưa tồn tại hoặc rỗng
-  void khoiTaoLichCa(const std::string &duongDan, const DanhSachLienKet<NguoiDung *> &dsNguoiDung) {
-    duongDanFile = duongDan;
-    if (docDanhSach(duongDan) && !dsCaTruc.empty()) {
-      return;
-    }
-
-    // Thu thập mã các nhân viên thu ngân có trong hệ thống
-    std::vector<std::string> dsMaNV;
-    Nut<NguoiDung *> *node = dsNguoiDung.layDau();
-    while (node != nullptr) {
-      if (node->duLieu->layMaVaiTro() == "NHANVIEN") {
-        dsMaNV.push_back(node->duLieu->layMa());
-      }
-      node = node->tiepTheo;
-    }
-    if (dsMaNV.empty()) return;
-
-    std::string nv1 = dsMaNV[0];
-    std::string nv2 = (dsMaNV.size() > 1) ? dsMaNV[1] : dsMaNV[0];
-
-    std::string ngayHienTai = TienIchNgay::layNgayHienTaiISO();
-
-    // Sinh lịch ca cho 3 ngày trước (đã hoàn thành, một số đã thanh toán, một số chưa)
-    // Ngày -2:
-    std::string n2 = TienIchNgay::congNgay(ngayHienTai, -2);
-    dsCaTruc.emplace_back("CA" + n2.substr(2, 2) + n2.substr(5, 2) + n2.substr(8, 2) + "-01",
-                          n2, "Ca Sáng", "08:00", "13:30", nv1, nv1, 1260000.0, 1); // Đã trả
-    dsCaTruc.emplace_back("CA" + n2.substr(2, 2) + n2.substr(5, 2) + n2.substr(8, 2) + "-02",
-                          n2, "Ca Chiều", "13:30", "18:30", nv2, nv2, 900000.0, 1); // Đã trả
-
-    // Ngày -1:
-    std::string n1 = TienIchNgay::congNgay(ngayHienTai, -1);
-    dsCaTruc.emplace_back("CA" + n1.substr(2, 2) + n1.substr(5, 2) + n1.substr(8, 2) + "-01",
-                          n1, "Ca Sáng", "08:00", "13:30", nv1, nv1, 1440000.0, 0); // Chưa trả
-    // NV1 bận nên NV2 làm thế ca:
-    dsCaTruc.emplace_back("CA" + n1.substr(2, 2) + n1.substr(5, 2) + n1.substr(8, 2) + "-02",
-                          n1, "Ca Chiều", "13:30", "18:30", nv1, nv2, 1800000.0, 0); // Chưa trả (NV2 hưởng)
-    dsCaTruc.emplace_back("CA" + n1.substr(2, 2) + n1.substr(5, 2) + n1.substr(8, 2) + "-03",
-                          n1, "Ca Tối", "18:30", "23:30", nv2, nv2, 2160000.0, 0); // Chưa trả
-
-    // Ngày hôm nay và 2 ngày tới:
-    for (int d = 0; d <= 2; d++) {
-      std::string ng = TienIchNgay::congNgay(ngayHienTai, d);
-      std::string prefix = "CA" + ng.substr(2, 2) + ng.substr(5, 2) + ng.substr(8, 2);
-
-      std::string nvSang = (d % 2 == 0) ? nv1 : nv2;
-      std::string nvChieu = (d % 2 == 0) ? nv2 : nv1;
-      std::string nvToi = nv1;
-
-      dsCaTruc.emplace_back(prefix + "-01", ng, "Ca Sáng", "08:00", "13:30", nvSang, nvSang, (d == 0 ? 540000.0 : 0.0), 0);
-      dsCaTruc.emplace_back(prefix + "-02", ng, "Ca Chiều", "13:30", "18:30", nvChieu, nvChieu, 0.0, 0);
-      dsCaTruc.emplace_back(prefix + "-03", ng, "Ca Tối", "18:30", "23:30", nvToi, nvToi, 0.0, 0);
-    }
-
-    ghiDanhSach(duongDan);
+    });
   }
 
   // Tìm ca trực theo mã ca
@@ -219,6 +165,7 @@ public:
   // Đổi người trực thay (Thế ca) với kiểm tra an toàn:
   // Mã kết quả: 0: Thành công, 1: Không tìm thấy ca, 2: Ca đã thanh toán lương, 3: Nhân viên bị trùng ca
   int doiNguoiLamThayChiTiet(const std::string &maCa, const std::string &maNVThucTe) {
+    const auto truoc = dsCaTruc;
     std::string ngayHienTai = TienIchNgay::layNgayHienTaiISO();
     for (auto &ca : dsCaTruc) {
       if (ca.layMaCa() == maCa) {
@@ -230,20 +177,17 @@ public:
           return 3; // Nhân viên làm thay đã có ca trùng giờ trong ngày
         }
         ca.ganNguoiLamThay(maNVThucTe);
-        ghiDanhSach(duongDanFile);
+        if (!ghiDanhSach(duongDanFile)) { dsCaTruc = truoc; return -1; }
         return 0; // Thành công
       }
     }
     return 1; // Không tìm thấy ca
   }
 
-  bool doiNguoiLamThay(const std::string &maCa, const std::string &maNVThucTe) {
-    return (doiNguoiLamThayChiTiet(maCa, maNVThucTe) == 0);
-  }
-
   // Xóa ca trực khỏi hệ thống:
   // Mã kết quả: 0: Thành công, 1: Không tìm thấy ca, 2: Ca đã thanh toán lương (cấm xóa), 3: Ca đã có doanh thu bán vé
   int xoaCaTruc(const std::string &maCa, bool buocXoaNeuCoDoanhThu = false) {
+    const auto truoc = dsCaTruc;
     std::string ngayHienTai = TienIchNgay::layNgayHienTaiISO();
     for (auto it = dsCaTruc.begin(); it != dsCaTruc.end(); ++it) {
       if (it->layMaCa() == maCa) {
@@ -258,23 +202,38 @@ public:
           }
         }
         dsCaTruc.erase(it);
-        ghiDanhSach(duongDanFile);
+        if (!ghiDanhSach(duongDanFile)) { dsCaTruc = truoc; return -1; }
         return 0; // Thành công
       }
     }
     return 1; // Không tìm thấy ca
   }
 
-  // Cập nhật doanh thu ca cho nhân viên tại ngày hôm nay
-  void capNhatDoanhThuCaHienTai(const std::string &maNV, double tienThem) {
-    std::string ngayHienTai = TienIchNgay::layNgayHienTaiISO();
-    for (auto &ca : dsCaTruc) {
-      if (ca.layNgay() == ngayHienTai && ca.layMaNVThucTe() == maNV) {
-        ca.capNhatDoanhThu(ca.layDoanhThu() + tienThem);
-        ghiDanhSach(duongDanFile);
-        return;
-      }
+  const CaTruc *timCaDangLam(const std::string &maNV, const std::string &ngay,
+                            const std::string &gio) const {
+    for (const auto &ca : dsCaTruc)
+      if (ca.layNgay() == ngay && ca.layMaNVThucTe() == maNV &&
+          ca.layGioBatDau() <= gio && gio < ca.layGioKetThuc()) return &ca;
+    return nullptr;
+  }
+
+  bool coThamChieuNhanVien(const std::string &ma) const {
+    if (!duLieuHopLe) return true;
+    for (const auto &ca : dsCaTruc)
+      if (ca.layMaNVPhanCong() == ma || ca.layMaNVThucTe() == ma) return true;
+    return false;
+  }
+
+  bool doiSoatDoanhThu(const std::string &maCa, double tongTien) {
+    if (!std::isfinite(tongTien) || tongTien < 0) return false;
+    for (auto &ca : dsCaTruc) if (ca.layMaCa() == maCa) {
+      const auto cu = ca;
+      if (ca.layDoanhThu() == tongTien) return true;
+      ca.capNhatDoanhThu(tongTien);
+      if (ghiDanhSach(duongDanFile)) return true;
+      ca = cu; return false;
     }
+    return false;
   }
 
   // Tính lương cho một nhân viên cụ thể (mặc định chỉ tính đến ngày hiện tại)
@@ -306,6 +265,7 @@ public:
 
   // Thanh toán lương cho nhân viên: chuyển các ca chưa trả đến ngày mốc thành đã trả
   int thanhToanLuongNhanVien(const std::string &maNV, const std::string &ngayMoc = "") {
+    const auto truoc = dsCaTruc;
     std::string moc = ngayMoc.empty() ? TienIchNgay::layNgayHienTaiISO() : ngayMoc;
     int dem = 0;
     for (auto &ca : dsCaTruc) {
@@ -316,7 +276,7 @@ public:
       }
     }
     if (dem > 0) {
-      ghiDanhSach(duongDanFile);
+      if (!ghiDanhSach(duongDanFile)) { dsCaTruc = truoc; return -1; }
     }
     return dem;
   }
@@ -355,6 +315,7 @@ public:
   int xepCaMoiChiTiet(const std::string &ngay, const std::string &tenCa,
                       const std::string &gioBD, const std::string &gioKT,
                       const std::string &maNV, std::string *maCaTaoMoi = nullptr) {
+    const auto truoc = dsCaTruc;
     if (!TienIchNgay::kiemTraDinhDangGio(gioBD) || !TienIchNgay::kiemTraDinhDangGio(gioKT)) {
       return 2;
     }
@@ -368,6 +329,8 @@ public:
       return 1; // Xung đột giờ của nhân viên
     }
 
+    std::tm parsed{};
+    if (!TienIchNgay::phanTichISO(ngay, parsed) || maNV.empty() || maNV == "TRONG") return 2;
     std::string prefix = "CA" + ngay.substr(2, 2) + ngay.substr(5, 2) + ngay.substr(8, 2);
     int demCa = 1;
     for (const auto &c : dsCaTruc) {
@@ -392,7 +355,7 @@ public:
     }
 
     dsCaTruc.emplace_back(maCa, ngay, tenCa, gioBD, gioKT, maNV, maNV, 0.0, 0);
-    ghiDanhSach(duongDanFile);
+    if (!ghiDanhSach(duongDanFile)) { dsCaTruc = truoc; return -1; }
     if (maCaTaoMoi != nullptr) {
       *maCaTaoMoi = maCa;
     }
@@ -410,9 +373,12 @@ public:
   bool dongBoCaTheoLichMau(const std::string &ngay, const std::string &tenCa,
                            const std::string &gioBD, const std::string &gioKT,
                            const std::string &maNV) {
+    const auto truoc = dsCaTruc;
     std::string ngayHienTai = TienIchNgay::layNgayHienTaiISO();
     for (auto &ca : dsCaTruc) {
       if (ca.layNgay() == ngay && (ca.layTenCa() == tenCa || ca.layGioBatDau() == gioBD)) {
+        // Không đổi nhầm một ca tùy chỉnh chỉ vì trùng tên hoặc giờ bắt đầu.
+        if (ca.layTenCa() != tenCa || ca.layGioBatDau() != gioBD || ca.layGioKetThuc() != gioKT) return false;
         if (ca.layNgay() <= ngayHienTai && ca.daThanhToan()) {
           return false;
         }
@@ -421,13 +387,13 @@ public:
         } else {
           ca.capNhatNhanVienMoi(maNV);
         }
-        ghiDanhSach(duongDanFile);
+        if (!ghiDanhSach(duongDanFile)) { dsCaTruc = truoc; return false; }
         return true;
       }
     }
 
     if (maNV != "TRONG" && !maNV.empty()) {
-      xepCaMoiChiTiet(ngay, tenCa, gioBD, gioKT, maNV);
+      return xepCaMoiChiTiet(ngay, tenCa, gioBD, gioKT, maNV) == 0;
     }
     return true;
   }

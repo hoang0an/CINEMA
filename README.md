@@ -1,25 +1,16 @@
-﻿# Quản lý rạp chiếu phim — PBL2
+# Quản lý rạp chiếu phim — PBL2
 
 **Nhóm 13:** Thái Nhật Hoàng Ân – Phan Nhật Hoàng.
 
-Ứng dụng C++17 chạy trên Windows Console, phục vụ học tập lập trình hướng đối tượng và cấu trúc dữ liệu. Các lệnh bên dưới chạy tại thư mục chứa README này.
+Ứng dụng C++17 chạy trên Windows Console, phục vụ học tập lập trình hướng đối tượng và cấu trúc dữ liệu.
 
-## Chức năng
+## Build và chạy
 
-- Đăng nhập, phân quyền quản trị viên và thu ngân.
-- Thêm, sửa, xóa, tìm kiếm và sắp xếp phim; quản lý ngày khởi chiếu, ngày hết đợt và trạng thái.
-- Tự sinh lịch cho 5 phòng trong 7 ngày tính cả hôm nay; bổ sung khung trống phù hợp, giữ lịch/ghế đã có và kiểm tra chồng thời lượng.
-- Xem lịch theo ngày, sơ đồ ghế, bán nhiều vé trong một hóa đơn và chặn ghế trùng/đã bán.
-- Quản lý nhân viên, ca trực, lịch tuần mẫu, tiền lương và báo cáo doanh thu theo kỳ.
-- Lưu dữ liệu bằng file văn bản UTF-8.
+Repository chỉ cần nội dung của **`Rap chieu phim`**. Không cần báo cáo, `artifacts` hoặc công cụ ở thư mục cha.
 
-## Yêu cầu và cách chạy
+Yêu cầu: Windows, PowerShell, terminal hỗ trợ UTF-8 và MinGW-w64 có `g++` hỗ trợ C++17. Máy kiểm thử sử dụng GCC 15.2.0. Không cần Python, CMake hay thư viện bên ngoài.
 
-- Windows và terminal hỗ trợ UTF-8; khuyến nghị Windows Terminal.
-- MinGW-w64 g++ hỗ trợ C++17. Dự án đã được kiểm tra với GCC 15.2.0 trên MSYS2 UCRT64.
-- Giao diện dùng Win32 API nên không chạy trực tiếp trên Linux/macOS.
-
-Mở PowerShell tại thư mục repository:
+Giải nén repository nếu tải ZIP. Mở PowerShell **tại thư mục có README này, `include`, `source` và `dulieu`**, rồi chạy:
 
 ```powershell
 g++ --version
@@ -27,7 +18,9 @@ g++ -std=c++17 -Wall -Wextra -Wpedantic -static -I include source/main.cpp -o ra
 if ($LASTEXITCODE -eq 0) { .\rapchieuphim.exe }
 ```
 
-Ứng dụng đọc/ghi `dulieu/` theo thư mục làm việc hiện tại. Hãy chạy từ thư mục repository, không chỉ sao chép EXE sang nơi khác. EXE được build lại từ source, không cần đưa vào Git.
+Nếu không tìm thấy `g++`, thêm thư mục `bin` của MinGW-w64 vào `PATH`, mở lại PowerShell và kiểm tra `g++ --version`.
+
+Ứng dụng dùng Win32 API nên không build trực tiếp trên Linux/macOS. Đường dẫn `dulieu/` tính theo thư mục làm việc hiện tại: luôn chạy EXE từ thư mục dự án như trên. Chỉ chạy một bản ứng dụng trên một bộ dữ liệu tại một thời điểm.
 
 ## Tài khoản demo
 
@@ -38,54 +31,76 @@ if ($LASTEXITCODE -eq 0) { .\rapchieuphim.exe }
 | Thu ngân | nhanvien2 | 123456 |
 | Thu ngân | nhanvien3 | 123456 |
 
-Thông tin nhân viên là dữ liệu giả. Mật khẩu lưu dạng văn bản, chỉ phục vụ demo offline; không dùng tài khoản/mật khẩu thật.
+Dữ liệu nhân viên là giả. Mật khẩu lưu văn bản cho demo offline; không sử dụng mật khẩu thật.
 
-## Quy tắc nghiệp vụ hiện hành
+## Chức năng và quy tắc
 
-- **E — Sửa phim:** Enter giữ nguyên từng trường. Ngày nhận `YYYY-MM-DD` hoặc `DD/MM/YYYY`. Không cho rút ngắn ngày hết đợt qua các suất đã xếp. Ngày cuối vẫn thuộc đợt chiếu.
-- **S — Trạng thái:** `1: Sắp chiếu`, `0: Ngừng chiếu`. Mở lại phim cần ngày khởi chiếu tương lai; không bật Đang chiếu thủ công. Trạng thái đồng bộ theo ngày khi nạp dữ liệu.
-- Quota danh mục là 5 Đang chiếu và 5 Sắp chiếu. Khi đồng bộ ngày làm vượt quota Đang chiếu, ứng dụng cảnh báo và chặn thêm theo giới hạn; không tự ngừng phim để ép đủ quota.
-- Lịch tự sinh tối đa 7 ngày; lịch cũ ngoài phạm vi vẫn giữ nguyên. Ngày khởi chiếu không bảo đảm có suất nếu lịch kín hoặc chưa thuộc phạm vi sinh lịch.
-- Không bán vé từ giờ bắt đầu suất chiếu. Mã suất rút gọn được tìm theo ngày đang chọn.
-- Khi có file `.blocked`, dừng bán và đối soát dữ liệu với `.bak`; không tự xóa marker để tiếp tục ghi khi chưa xác nhận dữ liệu nhất quán.
-
-## Dữ liệu mẫu
-
-Tại ngày **03/11/2026**, có 130 phim: 5 Đang chiếu, 5 Sắp chiếu và 120 Ngừng chiếu. Trạng thái sẽ thay đổi theo ngày hệ thống; các ngày trong dữ liệu là ngày demo.
-## Cấu trúc repository
-
-```text
-include/
-  cautruc/      # Cấu trúc dữ liệu tự viết
-  models/       # Phim, phòng, ghế, vé, hóa đơn, người dùng...
-  dichvu/       # Nghiệp vụ và báo cáo
-  luutru/       # Đọc/ghi dữ liệu
-  giaodien/     # Windows Console UI
-  tienich/      # Xử lý ngày và thời gian
-source/
-  main.cpp
-tests/          # Mã nguồn kiểm thử C++
-dulieu/         # Dữ liệu mẫu UTF-8
-```
-
-Ứng dụng vận dụng đóng gói, kế thừa, đa hình, trừu tượng, template và nạp chồng toán tử. Danh sách liên kết và ma trận được dùng trong nghiệp vụ;
+- Quản lý phim: thêm, sửa, xóa, tìm kiếm và sắp xếp theo thời lượng. Khi thêm, chọn tự động xác định trạng thái theo ngày hoặc ngừng chiếu; `Q` hủy.
+- Ngày nhận `YYYY-MM-DD` hoặc `DD/MM/YYYY`. Số ngày chiếu tính cả ngày đầu; một ngày chiếu có ngày kết thúc trùng ngày khởi chiếu. Đọc dữ liệu phim cũ vẫn giữ nguyên ngày kết thúc cũ.
+- Sửa phim: Enter giữ nguyên trường; không thay thời lượng khi còn suất tương lai hoặc rút ngắn đợt qua suất đã xếp. Mở lại phim qua menu trạng thái cần ngày khởi chiếu tương lai.
+- Quota khi thêm/đổi trạng thái: 5 phim đang chiếu và 5 phim sắp chiếu. Nếu chuyển ngày làm vượt quota thì cảnh báo, không tự ngừng phim.
+- Tự bổ sung lịch cho 5 phòng trong 7 ngày, gồm hôm nay; giữ suất đã có và kiểm tra chồng thời lượng. VIP có suất chiếu sớm. Phim có thể chưa có suất nếu lịch kín.
+- Bán nhiều vé trong một hóa đơn; chặn ghế trùng/đã bán và suất đã bắt đầu. Hóa đơn mới lưu mã nhân viên, mã ca nếu có ca đang làm và giờ lập. Bán ngoài ca vẫn ghi doanh số ngày, không tự gán vào ca khác.
+- Báo cáo thu ngân là **doanh số hôm nay theo mã nhân viên**, chỉ đọc dữ liệu. Hóa đơn cũ thiếu mã nhân viên vẫn nằm trong báo cáo tổng/kỳ; không được đoán vào báo cáo cá nhân.
+- Quản lý ca, làm thay, lịch tuần mẫu và quyết toán lương. Không xóa nhân viên còn tham chiếu ca/lịch mẫu/hóa đơn hoặc ca được hóa đơn mới tham chiếu.
+- Sửa lịch mẫu đồng bộ đúng ca tương ứng tuần sau, giữ người làm thay đã có. Xung đột hoặc lỗi lưu được báo rõ, không thông báo thành công vô điều kiện.
 
 ## Kiểm thử
 
-Giữ file `.cpp` trong `tests/`; không cần commit EXE hoặc log. Một số test cũ ghi vào `dulieu/` và phụ thuộc ngày/dữ liệu cụ thể: **không chạy toàn bộ test trực tiếp trên dữ liệu đang dùng**.
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tests\run.ps1
+```
 
-Ví dụ kiểm tra quota bằng fixture tạo trong bộ nhớ:
+Runner build C++ rồi chạy test trong thư mục tạm riêng; không sửa `dulieu` demo, không tải thêm test framework. Test bao phủ doanh số, ngày chiếu, dữ liệu cũ, giá vé sai, lỗi lưu và khôi phục bộ nhớ, lịch mẫu, ghế trùng, giao dịch thất bại và khóa ghi. Đây là kiểm thử nghiệp vụ, không thay thế nghiệm thu toàn bộ giao diện.
+
+## Đối soát dữ liệu
 
 ```powershell
 New-Item -ItemType Directory -Force build | Out-Null
-g++ -std=c++17 -Wall -Wextra -Wpedantic -I include tests/test_quota_limits.cpp -o build/test_quota_limits.exe
-if ($LASTEXITCODE -eq 0) { .\build\test_quota_limits.exe }
+g++ -std=c++17 -Wall -Wextra -Wpedantic -static -I include tools/check_data.cpp -o build/check_data.exe
+if ($LASTEXITCODE -eq 0) { .\build\check_data.exe }
 ```
 
-Không thêm `-DNDEBUG` khi chạy test dùng `assert`. Test có đọc/ghi file cần chạy trong thư mục làm việc riêng với bản sao dữ liệu. Runner và báo cáo ngoài thư mục dự án của môi trường phát triển trước đây không nằm trong repository này.
+Công cụ chỉ đọc, liệt kê sai lệch hóa đơn/lịch/ghế và khác biệt tên phim. Mã thoát `1`: không đọc được đầy đủ; `0`: đã kiểm tra xong, **không có nghĩa mọi dòng đều khớp**. Xem cảnh báo được in ra.
 
-## Trạng thái và giới hạn
+Dữ liệu demo có ngày cố định trong năm 2026; trạng thái và lịch thay đổi theo ngày máy. Ngày 12/11/2026 đã đối soát đủ 31 vé: khôi phục lịch và ghế theo hóa đơn, giữ nguyên nội dung hóa đơn và doanh thu. Công cụ đối soát báo **0 vé lệch lịch/ghế, 0 vé khác tên phim**. Xem [ghi chú sửa lỗi](docs/SUA_LOI_20261112.md).
 
-Các lỗi trọng yếu về xóa suất, chọn sai ngày, ghế trùng và xử lý lỗi lưu đã được sửa, cùng các cải tiến quản trị phim. Chưa nghiệm thu đầy đủ trên Windows sạch hoặc kiểm tra memory leak bằng sanitizer; không tuyên bố production-ready. Giao dịch hai file chưa bảo đảm nguyên tử xuyên mất điện/crash. Nhãn “lợi nhuận ròng” hiện chỉ tính doanh thu vé trừ tiền lương.
+Khởi động ứng dụng sẽ cảnh báo dữ liệu lệch. Sai lệch ngày hiện tại/tương lai khóa bán vé; sai lệch chỉ thuộc lịch sử được giữ để tra cứu. Không tự sửa hóa đơn nhằm làm mất cảnh báo.
 
-Tham khảo [Danh sách thuật toán](DANH_SACH_THUAT_TOAN.md), [Lịch sử cải tiến](LICH_SU_CAI_TIEN.md) và [Bối cảnh dự án](PROJECT-CONTEXT.md). Tài liệu lịch sử có thể nhắc tới bằng chứng và bản build cục bộ không được đưa vào repository; dùng hướng dẫn build trong README này cho source hiện tại.
+## Lưu trữ và khôi phục
+
+File UTF-8 trong `dulieu`, phân tách trường bằng `|`:
+
+| File | Nội dung |
+|---|---|
+| `phim.txt` | Phim; bản mới thêm cột `days-v2` nhận diện cách tính ngày |
+| `suatchieu.txt` | Suất, phòng, trạng thái ghế (`0`: trống, `1`: đã đặt) |
+| `hoadon.txt` | Mỗi dòng một vé; 11 cột cũ hoặc 14 cột mới, thêm mã nhân viên, mã ca, giờ lập |
+| `nguoidung.txt` | Tài khoản và nhân viên |
+| `catruc.txt` | Ca, doanh thu, trạng thái lương |
+| `catruc_mau.txt` | Lịch mẫu theo thứ |
+
+Trước khi chỉnh dữ liệu/nâng phiên bản, đóng ứng dụng và sao lưu cả `dulieu`. Không dùng EXE cũ để ghi lại dữ liệu đã chuyển định dạng mới.
+
+Ghi một file dùng `.writing` rồi thay file đích sau khi ghi thành công. Giao dịch vé dùng `.tmp`, `.bak`, `.blocked` cho lịch và hóa đơn. Nếu có `.blocked`, dừng bán, sao lưu hiện trạng, đối chiếu cả hai file với `.bak`; không xóa marker để tiếp tục bán khi chưa xác nhận dữ liệu nhất quán. Không cam kết giao dịch nguyên tử qua mất điện/crash giữa hai lần thay file.
+
+Doanh thu ca đối soát từ hóa đơn mới có mã ca. Nếu vé đã lưu nhưng cập nhật ca thất bại, ứng dụng báo và đối soát lại khi mở; không thực hiện lại giao dịch bán vé đó.
+
+## Cấu trúc và GitHub
+
+```text
+include/
+  cautruc/     # Danh sách liên kết, ma trận
+  models/      # Phim, suất, ghế, vé, hóa đơn, người dùng, ca
+  dichvu/      # Nghiệp vụ
+  luutru/      # Đọc dữ liệu, ghi file an toàn
+  giaodien/    # Windows Console
+  tienich/     # Ngày và thời gian
+source/main.cpp
+tests/         # Test C++ và runner PowerShell
+tools/         # Đối soát chỉ đọc
+docs/          # Ghi chú sửa lỗi
+dulieu/        # Dữ liệu demo
+```
+
+Lấy nội dung thư mục này làm gốc repository GitHub. Giữ source, test, công cụ và dữ liệu demo; `.gitignore` loại EXE, build, file tạm và bản sao lưu. Người tải về build lại EXE bằng lệnh đầu README.

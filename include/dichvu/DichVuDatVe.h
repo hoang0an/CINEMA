@@ -17,6 +17,9 @@
 #include <fstream>
 #include <iostream>
 #include <map>
+#include <memory>
+#include <limits>
+#include <cmath>
 #include <set>
 #include <filesystem>
 #include <sstream>
@@ -28,6 +31,7 @@ private:
   DanhSachLienKet<SuatChieu *> dsSuatChieu;
   DanhSachLienKet<HoaDon *> dsHoaDon;
   bool khoaGhi = false;
+  bool daNapHoaDon = false;
   int demVe;
   int demHD;
   std::string duongDanFile;
@@ -68,12 +72,26 @@ public:
     duongDanFile = duongDan;
     khoaGhi = std::filesystem::exists(duongDanFile + ".blocked");
     dsPhimRef = &dsPhim;
-    QuanLyFile::docDanhSachSuatChieu(duongDanFile, dsSuatChieu);
+    if (!QuanLyFile::docDanhSachSuatChieu(duongDanFile, dsSuatChieu)) khoaGhi = true;
+    // Chưa ghi file khi chưa nạp và đối soát hóa đơn.
+  }
 
-    if (dsPhim.laySoLuong() > 0) {
-      sinhLichChieuTuDong(dsPhim, soNgayPhuLich());
-      if (!luuLichChieu()) khoaGhi = true;
+  bool hoanTatKhoiTao(DanhSachLienKet<Phim> &dsPhim) {
+    kiemTraDoiSoat();
+    if (khoaGhi || !daNapHoaDon) return false;
+    for (auto p = dsPhim.layDau(); p; p = p->tiepTheo) {
+      if (p->duLieu.layTrangThai() == 0) {
+        std::vector<std::string> giuLai;
+        if (xuLyKhiPhimNgungChieu(p->duLieu.layMaPhim(), giuLai) < 0) return false;
+      }
     }
+    for (auto n = dsSuatChieu.layDau(); n; n = n->tiepTheo)
+      for (auto p = dsPhim.layDau(); p; p = p->tiepTheo)
+        if (n->duLieu->layMaPhim() == p->duLieu.layMaPhim()) {
+          n->duLieu->setTenPhim(p->duLieu.layTenPhim()); break;
+        }
+    sinhLichChieuTuDong(dsPhim, soNgayPhuLich());
+    return luuLichChieu();
   }
 
   static int soNgayPhuLich() {
@@ -106,13 +124,14 @@ public:
   }
 
   // Lưu bền vững lịch chiếu và toàn bộ trạng thái ghế vào file
-  bool luuLichChieu() const {
+  bool luuLichChieu() {
     if (khoaGhi) return false;
-    return QuanLyFile::ghiDanhSachSuatChieu(duongDanFile, dsSuatChieu);
+    if (QuanLyFile::ghiDanhSachSuatChieu(duongDanFile, dsSuatChieu)) return true;
+    khoaGhi = true; return false;
   }
 
   // Đồng bộ tên phim mới sang các suất chiếu hiện hành khi Admin sửa tên phim
-  void capNhatTenPhimSuatChieu(const std::string &maPhim, const std::string &tenMoi) {
+  bool capNhatTenPhimSuatChieu(const std::string &maPhim, const std::string &tenMoi) {
     bool coThayDoi = false;
     for (auto n = dsSuatChieu.layDau(); n; n = n->tiepTheo) {
       if (n->duLieu->layMaPhim() == maPhim && n->duLieu->layTenPhim() != tenMoi) {
@@ -121,8 +140,9 @@ public:
       }
     }
     if (coThayDoi && !duongDanFile.empty()) {
-      luuLichChieu();
+      return luuLichChieu();
     }
+    return true;
   }
 
   // Thuật toán Sinh lịch chiếu Lai (Hybrid Auto-Scheduler) cho 5 phòng chiếu trong n ngày tới
@@ -262,6 +282,8 @@ public:
     std::string ngayHienTai = TienIchNgay::layNgayHienTaiISO();
     if (khoaGhi) return -1;
     int soSuatDaHuy = 0;
+    const auto truoc = dsSuatChieu;
+    std::vector<SuatChieu *> daGo;
 
     Nut<SuatChieu *> *hienTai = dsSuatChieu.layDau();
 
@@ -272,7 +294,7 @@ public:
           // Suất chưa có ai mua vé -> Tự động hủy an toàn để giải phóng phòng
           hienTai = hienTai->tiepTheo;
           dsSuatChieu.xoaTheoGiaTri(sc);
-          delete sc;
+          daGo.push_back(sc);
           soSuatDaHuy++;
           continue;
         } else {
@@ -291,8 +313,9 @@ public:
     }
 
     if (soSuatDaHuy > 0) {
-      luuLichChieu();
+      if (!luuLichChieu()) { dsSuatChieu = truoc; return -1; }
     }
+    for (auto sc : daGo) delete sc;
     return soSuatDaHuy;
   }
 
@@ -563,139 +586,138 @@ public:
     return nullptr;
   }
 
-  // Tính tổng kết doanh số ca trực của riêng nhân viên chỉ định
-  void tinhDoanhThuCaTruc(const std::string &tenNV, int &soVe, int &soHD, double &tongTien) const {
-    soVe = 0;
-    soHD = 0;
-    tongTien = 0.0;
-    Nut<HoaDon *> *cur = dsHoaDon.layDau();
-    while (cur != nullptr) {
-      if (cur->duLieu != nullptr && cur->duLieu->layTenNhanVien() == tenNV) {
-        soHD++;
-        soVe += cur->duLieu->laySoLuongVe();
-        tongTien += cur->duLieu->layTongTien();
+  void tinhDoanhThuNhanVienTrongNgay(const std::string &maNV, const std::string &ngayISO,
+                                     int &soVe, int &soHD, double &tongTien,
+                                     const std::string &maCa = "") const {
+    soVe = soHD = 0; tongTien = 0;
+    for (auto n = dsHoaDon.layDau(); n; n = n->tiepTheo) {
+      const auto hd = n->duLieu;
+      if (!maNV.empty() && hd->layMaNhanVien() == maNV &&
+          TienIchNgay::chuanHoaISO(hd->layNgayLap()) == ngayISO &&
+          (maCa.empty() || hd->layMaCa() == maCa)) {
+        ++soHD; soVe += hd->laySoLuongVe(); tongTien += hd->layTongTien();
       }
-      cur = cur->tiepTheo;
     }
   }
 
-  // Đọc danh sách hóa đơn và vé từ tệp lưu trữ
+  bool coHoaDonNhanVien(const std::string &maNV, const std::string &ten) const {
+    if (!daNapHoaDon) return true; // Chưa đủ dữ liệu để chứng minh có thể xóa.
+    for (auto n = dsHoaDon.layDau(); n; n = n->tiepTheo)
+      if (n->duLieu->layMaNhanVien() == maNV ||
+          (n->duLieu->layMaNhanVien().empty() && n->duLieu->layTenNhanVien() == ten)) return true;
+    return false;
+  }
+
+  bool coHoaDonCa(const std::string &maCa) const {
+    for (auto n = dsHoaDon.layDau(); n; n = n->tiepTheo)
+      if (!maCa.empty() && n->duLieu->layMaCa() == maCa) return true;
+    return false;
+  }
+
+  bool dongBoDoanhThuCa(DichVuCaTruc &dvCa) const {
+    std::map<std::string, double> tong;
+    for (auto n = dsHoaDon.layDau(); n; n = n->tiepTheo)
+      if (!n->duLieu->layMaCa().empty()) tong[n->duLieu->layMaCa()] += n->duLieu->layTongTien();
+    bool ok = true;
+    for (const auto &p : tong) if (!dvCa.doiSoatDoanhThu(p.first, p.second)) ok = false;
+    return ok;
+  }
+
+  // Nạp toàn bộ hoặc từ chối toàn bộ; không ghi đè sau khi đọc thiếu dữ liệu.
   bool docDanhSachHoaDon(const std::string &duongDan = "dulieu/hoadon.txt") {
+    daNapHoaDon = false;
     duongDanFileHD = duongDan;
     std::ifstream file(duongDan);
-    if (!file.is_open()) {
-      return false;
-    }
-
-    // Xóa danh sách cũ nếu có
-    Nut<HoaDon *> *hienTaiHD = dsHoaDon.layDau();
-    while (hienTaiHD != nullptr) {
-      delete hienTaiHD->duLieu;
-      hienTaiHD = hienTaiHD->tiepTheo;
-    }
-    dsHoaDon = DanhSachLienKet<HoaDon *>();
-    demVe = 0;
-    demHD = 0;
-
+    if (!file) { khoaGhi = true; return false; }
+    std::vector<std::unique_ptr<HoaDon>> moi;
+    std::set<std::string> maVeDaCo, gheDaCo;
+    std::map<int, std::string> maHoaDonChuan;
+    int maxHD = 0, maxVe = 0, dongSo = 0;
+    auto soMa = [](const std::string &ma, const std::string &prefix) {
+      if (ma.size() <= 2 || ma.substr(0, 2) != prefix ||
+          ma.find_first_not_of("0123456789", 2) != std::string::npos) throw 0;
+      int n = std::stoi(ma.substr(2));
+      if (n < 1 || n == std::numeric_limits<int>::max()) throw 0;
+      return n;
+    };
     std::string dong;
-    while (std::getline(file, dong)) {
-      if (!dong.empty() && dong.back() == '\r') {
-        dong.pop_back();
+    try {
+      while (std::getline(file, dong)) {
+        ++dongSo;
+        if (!dong.empty() && dong.back() == '\r') dong.pop_back();
+        if (dong.empty()) continue;
+        std::vector<std::string> t;
+        std::stringstream ss(dong); std::string token;
+        while (std::getline(ss, token, '|')) t.push_back(token);
+        if (dong.back() == '|') t.push_back("");
+        if (t.size() != 11 && t.size() != 14) throw 0;
+        const bool legacy = t.size() == 11;
+        t.resize(14);
+        size_t used = 0; double gia = std::stod(t[10], &used);
+        if (used != t[10].size() || !std::isfinite(gia) || gia < 0 || gia > 1000000000) throw 0;
+        std::tm date{};
+        if (!TienIchNgay::phanTichISO(TienIchNgay::chuanHoaISO(t[1]), date) ||
+            !TienIchNgay::phanTichISO(TienIchNgay::chuanHoaISO(t[7]), date) ||
+            !TienIchNgay::kiemTraDinhDangGio(t[8]) || t[2].empty() || t[4].empty()) throw 0;
+        if (!legacy && (!t[11].empty() || !t[12].empty() || !t[13].empty()) &&
+            (t[11].empty() || !TienIchNgay::kiemTraDinhDangGio(t[13]))) throw 0;
+        if (t[9].size() < 2 || t[9][0] < 'A' || t[9][0] > 'Z' ||
+            t[9].find_first_not_of("0123456789", 1) != std::string::npos || std::stoi(t[9].substr(1)) < 1) throw 0;
+        const int idHD = soMa(t[0], "HD"), idVe = soMa(t[3], "VE");
+        const auto idCu = maHoaDonChuan.find(idHD);
+        if (idCu != maHoaDonChuan.end() && idCu->second != t[0]) throw 0;
+        maHoaDonChuan[idHD] = t[0];
+        if (!maVeDaCo.insert(std::to_string(idVe)).second ||
+            !gheDaCo.insert(t[4] + "|" + t[9].substr(0, 1) + std::to_string(std::stoi(t[9].substr(1)))).second) throw 0;
+        maxHD = (std::max)(maxHD, idHD); maxVe = (std::max)(maxVe, idVe);
+        HoaDon *hd = nullptr;
+        for (auto &h : moi) if (h->layMaHoaDon() == t[0]) { hd = h.get(); break; }
+        if (hd && (hd->layNgayLap() != t[1] || hd->layTenNhanVien() != t[2] ||
+                   hd->layMaNhanVien() != t[11] || hd->layMaCa() != t[12] || hd->layGioLap() != t[13])) throw 0;
+        if (!hd) { moi.emplace_back(new HoaDon(t[0], t[1], t[2], t[11], t[12], t[13])); hd = moi.back().get(); }
+        hd->themVe(Ve(t[3], t[4], t[5], t[6], t[7], t[8], t[9], gia));
       }
-      if (dong.empty()) continue;
-
-      std::vector<std::string> tokens;
-      std::string token;
-      std::stringstream ss(dong);
-      while (std::getline(ss, token, '|')) {
-        tokens.push_back(token);
-      }
-      if (tokens.size() < 11) continue;
-
-      std::string maHD = tokens[0];
-      std::string ngayLap = tokens[1];
-      std::string tenNV = tokens[2];
-      std::string maVe = tokens[3];
-      std::string maSC = tokens[4];
-      std::string tenPhim = tokens[5];
-      std::string phongChieu = tokens[6];
-      std::string ngayChieu = tokens[7];
-      std::string gioChieu = tokens[8];
-      std::string maGhe = tokens[9];
-      double giaVe = 0.0;
-      try { giaVe = std::stod(tokens[10]); } catch (...) { giaVe = 0.0; }
-
-      // Cập nhật bộ đếm demHD
-      try {
-        if (maHD.length() >= 3) {
-          int soHD = std::stoi(maHD.substr(2));
-          if (soHD > demHD) demHD = soHD;
-        }
-      } catch (...) {}
-
-      // Cập nhật bộ đếm demVe
-      try {
-        if (maVe.length() >= 3) {
-          int soVe = std::stoi(maVe.substr(2));
-          if (soVe > demVe) demVe = soVe;
-        }
-      } catch (...) {}
-
-      // Tìm xem hóa đơn đã được tạo trong danh sách chưa
-      HoaDon *hd = nullptr;
-      Nut<HoaDon *> *node = dsHoaDon.layDau();
-      while (node != nullptr) {
-        if (node->duLieu != nullptr && node->duLieu->layMaHoaDon() == maHD) {
-          hd = node->duLieu;
-          break;
-        }
-        node = node->tiepTheo;
-      }
-
-      if (hd == nullptr) {
-        hd = new HoaDon(maHD, ngayLap, tenNV);
-        dsHoaDon.themCuoi(hd);
-      }
-
-      Ve v(maVe, maSC, tenPhim, phongChieu, ngayChieu, gioChieu, maGhe, giaVe);
-      hd->themVe(v);
+      if (file.bad()) throw 0;
+    } catch (...) {
+      std::cerr << "Hoa don khong hop le tai dong " << dongSo << ". Da khoa ghi.\n";
+      khoaGhi = true; return false;
     }
-    file.close();
-    return !file.bad();
+    for (auto n = dsHoaDon.layDau(); n; n = n->tiepTheo) delete n->duLieu;
+    dsHoaDon = DanhSachLienKet<HoaDon *>();
+    for (auto &h : moi) dsHoaDon.themCuoi(h.release());
+    demVe = maxVe; demHD = maxHD; daNapHoaDon = true;
+    return true;
   }
 
-  // Lưu một hóa đơn mới vào tệp lưu trữ
-  bool luuHoaDon(const HoaDon *hd) const {
-    if (khoaGhi || hd == nullptr) return false;
-    std::ofstream file(duongDanFileHD, std::ios::app);
-    if (!file.is_open()) return false;
-
-    Nut<Ve> *cur = hd->layDanhSachVe().layDau();
-    while (cur != nullptr) {
-      const Ve &v = cur->duLieu;
-      file << QuanLyFile::khuKyTuPhanCach(hd->layMaHoaDon()) << "|"
-           << QuanLyFile::khuKyTuPhanCach(hd->layNgayLap()) << "|"
-           << QuanLyFile::khuKyTuPhanCach(hd->layTenNhanVien()) << "|"
-           << QuanLyFile::khuKyTuPhanCach(v.layMaVe()) << "|"
-           << QuanLyFile::khuKyTuPhanCach(v.layMaSuatChieu()) << "|"
-           << QuanLyFile::khuKyTuPhanCach(v.layTenPhim()) << "|"
-           << QuanLyFile::khuKyTuPhanCach(v.layPhongChieu()) << "|"
-           << QuanLyFile::khuKyTuPhanCach(v.layNgayChieu()) << "|"
-           << QuanLyFile::khuKyTuPhanCach(v.layGioChieu()) << "|"
-           << QuanLyFile::khuKyTuPhanCach(v.layMaGhe()) << "|"
-           << (long long)v.layGiaVe() << "\n";
-      cur = cur->tiepTheo;
+  // Chỉ kiểm tra; không tự suy diễn hay sửa hóa đơn lịch sử.
+  std::vector<std::string> kiemTraDoiSoat() {
+    std::vector<std::string> loi;
+    const auto homNay = TienIchNgay::layNgayHienTaiISO();
+    for (auto n = dsHoaDon.layDau(); n; n = n->tiepTheo) {
+      for (auto v = n->duLieu->layDanhSachVe().layDau(); v; v = v->tiepTheo) {
+        const auto &ve = v->duLieu;
+        SuatChieu *sc = nullptr;
+        for (auto p = dsSuatChieu.layDau(); p; p = p->tiepTheo)
+          if (p->duLieu->layMaSuatChieu() == ve.layMaSuatChieu()) { sc = p->duLieu; break; }
+        const int hang = ve.layMaGhe()[0] - 'A', cot = std::stoi(ve.layMaGhe().substr(1)) - 1;
+        const bool khop = sc && sc->layPhongChieu() && hang < sc->layPhongChieu()->laySoHang() &&
+          cot < sc->layPhongChieu()->laySoCot() && sc->layPhongChieu()->kiemTraGheDaDat(hang, cot) &&
+          sc->layNgayChieu() == TienIchNgay::chuanHoaISO(ve.layNgayChieu()) && sc->layGioChieu() == ve.layGioChieu() &&
+          sc->layPhongChieu()->layTenPhong() == ve.layPhongChieu();
+        if (!khop) {
+          loi.push_back(ve.layMaVe() + ": " + ve.layMaSuatChieu() + " / " + ve.layMaGhe());
+          if (TienIchNgay::chuanHoaISO(ve.layNgayChieu()) >= homNay || (sc && sc->layNgayChieu() >= homNay)) khoaGhi = true;
+        }
+      }
     }
-    file.close();
-    return !file.fail();
+    return loi;
   }
 
   // Lưu toàn bộ danh sách hóa đơn hiện tại
   bool luuToanBoHoaDon(const std::string &duongDan = "") const {
     if (khoaGhi) return false;
     std::string path = duongDan.empty() ? duongDanFileHD : duongDan;
-    std::ofstream file(path);
-    if (!file.is_open()) return false;
+    return ghiFileAnToan(path, [&](std::ostream &file) {
 
     Nut<HoaDon *> *curHD = dsHoaDon.layDau();
     while (curHD != nullptr) {
@@ -714,14 +736,16 @@ public:
                << QuanLyFile::khuKyTuPhanCach(v.layNgayChieu()) << "|"
                << QuanLyFile::khuKyTuPhanCach(v.layGioChieu()) << "|"
                << QuanLyFile::khuKyTuPhanCach(v.layMaGhe()) << "|"
-               << (long long)v.layGiaVe() << "\n";
+               << (long long)v.layGiaVe() << "|"
+               << QuanLyFile::khuKyTuPhanCach(hd->layMaNhanVien()) << "|"
+               << QuanLyFile::khuKyTuPhanCach(hd->layMaCa()) << "|"
+               << QuanLyFile::khuKyTuPhanCach(hd->layGioLap()) << "\n";
           curVe = curVe->tiepTheo;
         }
       }
       curHD = curHD->tiepTheo;
     }
-    file.close();
-    return !file.fail();
+    });
   }
 
   // Tính toán báo cáo kinh doanh và thống kê đa chiều theo khoảng thời gian [tuNgayISO, denNgayISO]
@@ -849,8 +873,14 @@ public:
   // Nghiệp vụ đặt nhiều vé cùng lúc trong 1 giao dịch: Đảm bảo tính nguyên tử (All-or-Nothing)
   bool datNhieuVe(const std::string &maSCInput,
                   const std::vector<std::pair<int, int>> &dsGhe,
-                  const std::string &tenNV, const std::string &ngayLap) {
-    if (khoaGhi || dsGhe.empty()) return false;
+                  const std::string &tenNV, const std::string &ngayLap,
+                   const std::string &maNV, const std::string &maCa, const std::string &gioLap,
+                   bool inHoaDon = true) {
+    if (khoaGhi || !daNapHoaDon || dsGhe.empty() || maNV.empty() ||
+        !TienIchNgay::kiemTraDinhDangGio(gioLap) ||
+        TienIchNgay::chuanHoaISO(ngayLap) != TienIchNgay::layNgayHienTaiISO()) return false;
+    if (demHD == std::numeric_limits<int>::max() ||
+        dsGhe.size() > static_cast<size_t>(std::numeric_limits<int>::max() - demVe)) return false;
 
     SuatChieu *sc = timSuatChieu(maSCInput);
     if (sc == nullptr) {
@@ -884,7 +914,7 @@ public:
     demHD++;
     std::string tientoHD = (demHD < 10) ? "HD00" : (demHD < 100 ? "HD0" : "HD");
     std::string maHD = tientoHD + std::to_string(demHD);
-    HoaDon *hd = new HoaDon(maHD, ngayLap, tenNV);
+    HoaDon *hd = new HoaDon(maHD, ngayLap, tenNV, maNV, maCa, gioLap);
 
     // 3. Đặt từng ghế và tạo các vé tương ứng
     for (const auto &g : dsGhe) {
@@ -917,7 +947,7 @@ public:
     }
 
     // 5. In hóa đơn lên console
-    hd->inHoaDon();
+    if (inHoaDon) hd->inHoaDon();
     return true;
   }
 
@@ -956,12 +986,6 @@ protected:
     return !ec;
   }
 public:
-  // Đặt 1 vé đơn lẻ (tương thích ngược)
-  bool datVe(const std::string &maSCInput, int hang, int cot,
-             const std::string &tenNV, const std::string &ngayLap) {
-    return datNhieuVe(maSCInput, {{hang, cot}}, tenNV, ngayLap);
-  }
-
   virtual ~DichVuDatVe() {
     Nut<SuatChieu *> *hienTai = dsSuatChieu.layDau();
     while (hienTai != nullptr) {

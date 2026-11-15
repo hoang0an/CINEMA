@@ -32,7 +32,10 @@ public:
     QuanLyFile::docDanhSachNguoiDung("dulieu/nguoidung.txt", dsNguoiDung);
 
     // Khởi tạo ca trực và đối soát doanh thu
-    dvCaTruc.khoiTaoLichCa("dulieu/catruc.txt", dsNguoiDung);
+    if (!dvCaTruc.docDanhSach("dulieu/catruc.txt")) {
+      TienIchConsole::hienThiLoi("Không đọc được đầy đủ ca trực. Đã khóa ghi ca để tránh mất dữ liệu.");
+      TienIchConsole::choPhimBatKy();
+    }
 
     // Nạp lịch tuần chuẩn cho rạp
     std::vector<std::string> dsMaNV;
@@ -43,13 +46,34 @@ public:
       }
       node = node->tiepTheo;
     }
-    dvLichMau.docDanhSach("dulieu/catruc_mau.txt", dsMaNV);
+    if (!dvLichMau.docDanhSach("dulieu/catruc_mau.txt", dsMaNV)) {
+      TienIchConsole::hienThiLoi("Không đọc/lưu được lịch mẫu. Kiểm tra dữ liệu trước khi phân công.");
+      TienIchConsole::choPhimBatKy();
+    }
 
     // Nạp lịch chiếu bền vững từ file suatchieu.txt (nếu chưa có sẽ tự sinh 7 ngày)
     dvDatVe.khoiTaoLichChieu("dulieu/suatchieu.txt", dvPhim.layDanhSach());
 
     // Nạp lịch sử hóa đơn và vé bán từ file hoadon.txt
-    dvDatVe.docDanhSachHoaDon("dulieu/hoadon.txt");
+    if (!dvDatVe.docDanhSachHoaDon("dulieu/hoadon.txt")) {
+      TienIchConsole::hienThiLoi("Không đọc được đầy đủ hóa đơn. Đã khóa bán vé; kiểm tra dữ liệu trước khi mở lại.");
+      TienIchConsole::choPhimBatKy();
+    } else {
+      const auto lech = dvDatVe.kiemTraDoiSoat();
+      if (!lech.empty()) {
+        TienIchConsole::hienThiLoi("Có " + std::to_string(lech.size()) + " vé lệch lịch/ghế. Xem chi tiết trong thông báo bên dưới; không tự sửa lịch sử.");
+        for (const auto &dong : lech) std::cerr << dong << "\n";
+        TienIchConsole::choPhimBatKy();
+      }
+      if (!dvDatVe.dongBoDoanhThuCa(dvCaTruc)) {
+        TienIchConsole::hienThiLoi("Chưa đồng bộ được doanh thu ca từ hóa đơn. Kiểm tra file ca trực.");
+        TienIchConsole::choPhimBatKy();
+      }
+      if (!dvDatVe.hoanTatKhoiTao(dvPhim.layDanhSach())) {
+        TienIchConsole::hienThiLoi("Bán vé đang bị khóa: chưa hoàn tất nạp/đối soát/lưu lịch. Kiểm tra dữ liệu và file .blocked trước khi mở lại.");
+        TienIchConsole::choPhimBatKy();
+      }
+    }
   }
 
   ~GiaoDienConsole() {
@@ -198,77 +222,41 @@ public:
       return;
     }
 
-    // Bước 5: Trạng thái & Kiểm tra hạn ngạch rạp
-    veForm(5);
-    int soDangChieu = dvPhim.demSoPhimTheoTrangThai(1);
-    int soSapChieu = dvPhim.demSoPhimTheoTrangThai(2);
-    char quotaInfo[128];
-    snprintf(quotaInfo, sizeof(quotaInfo), " [Hiện có: %d/%d Đang chiếu, %d/%d Sắp chiếu]",
-             soDangChieu, DichVuPhim::GIOI_HAN_DANG_CHIEU,
-             soSapChieu, DichVuPhim::GIOI_HAN_SAP_CHIEU);
-    std::cout << "\t\tHạn ngạch cụm rạp:" << quotaInfo << "\n";
-    std::cout << "\t\tChọn trạng thái [";
-    TienIchConsole::inChuCoMau("1: Đang chiếu", TienIchConsole::MAU_DANG_CHIEU);
-    std::cout << ", ";
-    TienIchConsole::inChuCoMau("2: Sắp chiếu", TienIchConsole::MAU_SAP_CHIEU);
-    std::cout << ", ";
-    TienIchConsole::inChuCoMau("0: Ngừng chiếu", TienIchConsole::MAU_NGUNG_CHIEU);
-    std::cout << ", mặc định: 1, nhập 'q' hoặc [0] để hủy]: ";
-    std::string strTt;
-    std::getline(std::cin, strTt);
-    strTt = TienIchConsole::catKhoangTrang(strTt);
-    if (strTt == "q" || strTt == "Q" || strTt == "0" || strTt == "huy" || strTt == "exit") {
-      TienIchConsole::hienThiThanhCongTamThoi("Đã hủy thêm phim!", 800);
-      return;
+    // Ngày quyết định trạng thái đang/sắp chiếu; 0 chỉ dùng ngừng chiếu.
+    while (true) {
+      veForm(5);
+      std::cout << "Trạng thái [1: Tự động theo ngày, 0: Ngừng chiếu, Enter: 1, Q: hủy]: ";
+      std::string chon; if (!std::getline(std::cin, chon)) return;
+      chon = QuanLyFile::trim(chon);
+      if (chon == "q" || chon == "Q") return;
+      if (chon.empty() || chon == "1") { trangThai = 1; break; }
+      if (chon == "0") { trangThai = 0; break; }
+      TienIchConsole::hienThiLoi("Chỉ nhận 0, 1 hoặc Q.");
+      Sleep(1000);
     }
-    if (!strTt.empty()) {
+    while (true) {
+      veForm(6);
+      std::cout << "Ngày khởi chiếu YYYY-MM-DD hoặc DD/MM/YYYY [Enter: hôm nay, Q: hủy]: ";
+      std::string nhap; if (!std::getline(std::cin, nhap)) return;
+      nhap = QuanLyFile::trim(nhap);
+      if (nhap == "q" || nhap == "Q") return;
+      if (nhap.empty()) { ngayKC = TienIchNgay::layNgayHienTaiISO(); break; }
+      const auto iso = TienIchNgay::chuanHoaISO(nhap); std::tm parsed{};
+      if (TienIchNgay::phanTichISO(iso, parsed)) { ngayKC = iso; break; }
+      TienIchConsole::hienThiLoi("Ngày không hợp lệ; hãy nhập lại."); Sleep(1000);
+    }
+    while (true) {
+      veForm(7);
+      std::cout << "Số ngày chiếu, tính cả ngày đầu [1–365, Enter: 30, Q: hủy]: ";
+      std::string nhap; if (!std::getline(std::cin, nhap)) return;
+      nhap = QuanLyFile::trim(nhap);
+      if (nhap == "q" || nhap == "Q") return;
+      if (nhap.empty()) { soNgayChieu = 30; break; }
       try {
-        int parsed = std::stoi(strTt);
-        if (parsed == 0 || parsed == 1 || parsed == 2) trangThai = parsed;
-      } catch (...) {}
-    }
-
-    std::string loiGioiHan;
-    if (!dvPhim.kiemTraGioiHanTrangThai(trangThai, loiGioiHan)) {
-      TienIchConsole::hienThiLoi(loiGioiHan);
-      Sleep(2000);
-      return;
-    }
-
-    // Bước 6: Ngày khởi chiếu
-    veForm(6);
-    std::cout << "\t\tNhập ngày khởi chiếu DD/MM/YYYY, nhấn Enter lấy hôm nay "
-              << TienIchNgay::dinhDangHienThi(ngayKC) << ", hoặc [0] để hủy: ";
-    std::string strNgay;
-    std::getline(std::cin, strNgay);
-    strNgay = TienIchConsole::catKhoangTrang(strNgay);
-    if (strNgay == "0" || strNgay == "q" || strNgay == "Q" || strNgay == "huy") {
-      TienIchConsole::hienThiThanhCongTamThoi("Đã hủy thêm phim!", 800);
-      return;
-    }
-    if (!strNgay.empty()) {
-      std::string parsedISO = TienIchNgay::chuanHoaISO(QuanLyFile::trim(strNgay));
-      std::tm tmTest;
-      if (TienIchNgay::phanTichISO(parsedISO, tmTest)) {
-        ngayKC = parsedISO;
-      }
-    }
-
-    // Bước 7: Số ngày trình chiếu
-    veForm(7);
-    std::cout << "\t\tNhập số ngày chiếu tại rạp [1 - 365], nhấn Enter lấy 30 ngày, hoặc [0] để hủy: ";
-    std::string strSn;
-    std::getline(std::cin, strSn);
-    strSn = TienIchConsole::catKhoangTrang(strSn);
-    if (strSn == "0" || strSn == "q" || strSn == "Q" || strSn == "huy") {
-      TienIchConsole::hienThiThanhCongTamThoi("Đã hủy thêm phim!", 800);
-      return;
-    }
-    if (!strSn.empty()) {
-      try {
-        int parsedSn = std::stoi(strSn);
-        if (parsedSn > 0 && parsedSn <= 365) soNgayChieu = parsedSn;
-      } catch (...) {}
+        size_t n = 0; int so = std::stoi(nhap, &n);
+        if (n == nhap.size() && so >= 1 && so <= 365) { soNgayChieu = so; break; }
+      } catch (const std::exception &) { /* Hiển thị lỗi bên dưới. */ }
+      TienIchConsole::hienThiLoi("Số ngày phải là số nguyên từ 1 đến 365."); Sleep(1000);
     }
 
     printf("\n\t\tXác nhận thêm phim [%s] %s vào hệ thống? [1/Y]: Đồng ý  |  [0/Khác]: Hủy bỏ: ",
@@ -281,10 +269,15 @@ public:
 
     Phim phimMoi(maP, tenP, theLoai, daoDien, thoiLuong, trangThai, ngayKC, soNgayChieu);
     if (dvPhim.themPhim(phimMoi)) {
-      QuanLyFile::ghiDanhSachPhim("dulieu/phim.txt", dvPhim.layDanhSach());
-      dvDatVe.sinhLichChieuTuDong(dvPhim.layDanhSach(), DichVuDatVe::soNgayPhuLich());
-      dvDatVe.luuLichChieu();
-      TienIchConsole::hienThiThanhCong("Thêm phim thành công! Mã phim được cấp: [" + maP + "]");
+      if (!QuanLyFile::ghiDanhSachPhim("dulieu/phim.txt", dvPhim.layDanhSach())) {
+        dvPhim.layDanhSach().xoaTheoGiaTri(phimMoi);
+        TienIchConsole::hienThiLoi("Không lưu được phim. Đã hủy thêm phim.");
+      } else {
+        dvDatVe.sinhLichChieuTuDong(dvPhim.layDanhSach(), DichVuDatVe::soNgayPhuLich());
+        if (!dvDatVe.luuLichChieu())
+          TienIchConsole::hienThiLoi("Đã lưu phim nhưng chưa lưu được lịch; đã khóa bán vé. Kiểm tra file và mở lại ứng dụng.");
+        else TienIchConsole::hienThiThanhCong("Thêm phim thành công! Mã phim: [" + maP + "]");
+      }
     } else {
       TienIchConsole::hienThiLoi("Thêm phim thất bại - Mã đã tồn tại hoặc dữ liệu vi phạm!");
     }
@@ -409,8 +402,17 @@ public:
     std::string ngayLap = TienIchNgay::dinhDangHienThi(TienIchNgay::layNgayHienTaiISO());
     std::string tenNV = (nguoiDungHienTai != nullptr) ? nguoiDungHienTai->layHoTen() : "Nhân viên quầy";
 
-    if (dvDatVe.datNhieuVe(sc->layMaSuatChieu(), dsGheChon, tenNV, ngayLap)) {
+    const auto maNV = nguoiDungHienTai->layMa();
+    const auto gioLap = TienIchNgay::layGioHienTai();
+    const auto ca = dvCaTruc.timCaDangLam(maNV, TienIchNgay::layNgayHienTaiISO(), gioLap);
+    const auto maCa = ca ? ca->layMaCa() : "";
+    if (dvDatVe.datNhieuVe(sc->layMaSuatChieu(), dsGheChon, tenNV, ngayLap, maNV, maCa, gioLap)) {
       TienIchConsole::hienThiThanhCong("Giao dịch đặt vé hoàn tất! Hóa đơn đã được lập thành công.");
+      if (!dvDatVe.dongBoDoanhThuCa(dvCaTruc))
+        TienIchConsole::hienThiLoi("Vé đã lưu, nhưng chưa cập nhật được doanh thu ca. Không bán lại giao dịch này; đối soát khi mở lại ứng dụng.");
+      if (!ca) TienIchConsole::hienThiLoi("Giao dịch ngoài ca đã phân công: được ghi vào doanh số ngày, chưa gán ca.");
+    } else {
+      TienIchConsole::hienThiLoi("Không hoàn tất giao dịch. Kiểm tra dữ liệu hoặc trạng thái khóa bán vé.");
     }
     TienIchConsole::choPhimBatKy();
   }
@@ -761,8 +763,9 @@ public:
                  TienIchConsole::dinhDangTien(tienChuaTra).c_str(), nd->layHoTen().c_str());
           int xn = TienIchConsole::docPhimDon();
           if (xn == '1' || xn == 'y' || xn == 'Y') {
-            dvCaTruc.thanhToanLuongNhanVien(nd->layMa());
-            TienIchConsole::hienThiThanhCong("Đã quyết toán và thanh toán lương thành công! Lương cần thanh toán chuyển về 0 VNĐ.");
+            if (dvCaTruc.thanhToanLuongNhanVien(nd->layMa()) < 0)
+              TienIchConsole::hienThiLoi("Không lưu được thanh toán. Trạng thái lương được giữ nguyên.");
+            else TienIchConsole::hienThiThanhCong("Đã lưu quyết toán lương thành công.");
             Sleep(1000);
           } else {
             TienIchConsole::hienThiThanhCong("Đã hủy thao tác thanh toán lương.");
@@ -847,9 +850,13 @@ public:
         }
 
         mkMoi = QuanLyFile::khuKyTuPhanCach(mkMoi);
+        const auto mkCu = nd->layMatKhau();
         nd->doiMatKhau(mkMoi);
         if (QuanLyFile::ghiDanhSachNguoiDung("dulieu/nguoidung.txt", dsNguoiDung)) {
           TienIchConsole::hienThiThanhCong("Đổi mật khẩu tài khoản thành công!");
+        } else {
+          nd->doiMatKhau(mkCu);
+          TienIchConsole::hienThiLoi("Không lưu được mật khẩu; mật khẩu cũ vẫn có hiệu lực.");
         }
         TienIchConsole::choPhimBatKy();
         break;
@@ -866,9 +873,19 @@ public:
                nd->layMa().c_str(), nd->layHoTen().c_str());
         int xn = TienIchConsole::docPhimDon();
         if (xn == '1' || xn == 'y' || xn == 'Y') {
+          if (dvCaTruc.coThamChieuNhanVien(nd->layMa()) || dvLichMau.coThamChieuNhanVien(nd->layMa()) ||
+              dvDatVe.coHoaDonNhanVien(nd->layMa(), nd->layHoTen())) {
+            TienIchConsole::hienThiLoi("Không thể xóa nhân viên còn ca trực, lịch mẫu hoặc hóa đơn. Giữ tài khoản để bảo toàn lịch sử và lương.");
+            TienIchConsole::choPhimBatKy(); break;
+          }
+          auto truoc = dsNguoiDung;
           dsNguoiDung.xoaTheoGiaTri(nd);
+          if (!QuanLyFile::ghiDanhSachNguoiDung("dulieu/nguoidung.txt", dsNguoiDung)) {
+            dsNguoiDung = truoc;
+            TienIchConsole::hienThiLoi("Không lưu được thay đổi. Nhân viên chưa bị xóa.");
+            TienIchConsole::choPhimBatKy(); break;
+          }
           delete nd;
-          QuanLyFile::ghiDanhSachNguoiDung("dulieu/nguoidung.txt", dsNguoiDung);
           TienIchConsole::hienThiThanhCong("Đã xóa tài khoản nhân viên thành công!");
           Sleep(1000);
           dangXem = false;
@@ -1080,6 +1097,7 @@ public:
     if (QuanLyFile::ghiDanhSachNguoiDung("dulieu/nguoidung.txt", dsNguoiDung)) {
       TienIchConsole::hienThiThanhCong("Thêm tài khoản nhân viên thành công!");
     } else {
+      dsNguoiDung.xoaTheoGiaTri(nvMoi); delete nvMoi;
       TienIchConsole::hienThiLoi("Lỗi lưu dữ liệu vào file nguoidung.txt!");
     }
     TienIchConsole::choPhimBatKy();
@@ -1376,6 +1394,10 @@ public:
         }
 
         const auto &caCanXoa = dsCa[idx];
+        if (dvDatVe.coHoaDonCa(caCanXoa.layMaCa())) {
+          TienIchConsole::hienThiLoi("Không xóa ca đang được hóa đơn tham chiếu.");
+          TienIchConsole::choPhimBatKy(); continue;
+        }
         std::string ngayHienTai = TienIchNgay::layNgayHienTaiISO();
         if (caCanXoa.layNgay() <= ngayHienTai && caCanXoa.daThanhToan()) {
           TienIchConsole::hienThiLoi("Bảo vệ tài chính: Không được phép xóa ca đã thanh toán lương!");
@@ -1388,8 +1410,9 @@ public:
                  TienIchConsole::dinhDangTien(caCanXoa.layDoanhThu()).c_str());
           int xn = TienIchConsole::docPhimDon();
           if (xn == '1' || xn == 'y' || xn == 'Y') {
-            dvCaTruc.xoaCaTruc(caCanXoa.layMaCa(), true);
-            TienIchConsole::hienThiThanhCong("Đã xóa ca trực thành công!");
+            if (dvCaTruc.xoaCaTruc(caCanXoa.layMaCa(), true) == 0)
+              TienIchConsole::hienThiThanhCong("Đã xóa ca trực thành công!");
+            else TienIchConsole::hienThiLoi("Không xóa/lưu được ca. Dữ liệu được giữ nguyên.");
           } else {
             TienIchConsole::hienThiLoi("Đã hủy thao tác xóa ca.");
           }
@@ -1398,8 +1421,9 @@ public:
                  caCanXoa.layMaCa().c_str(), caCanXoa.layTenCa().c_str());
           int xn = TienIchConsole::docPhimDon();
           if (xn == '1' || xn == 'y' || xn == 'Y') {
-            dvCaTruc.xoaCaTruc(caCanXoa.layMaCa(), false);
-            TienIchConsole::hienThiThanhCong("Đã xóa ca trực thành công!");
+            if (dvCaTruc.xoaCaTruc(caCanXoa.layMaCa(), false) == 0)
+              TienIchConsole::hienThiThanhCong("Đã xóa ca trực thành công!");
+            else TienIchConsole::hienThiLoi("Không xóa/lưu được ca. Dữ liệu được giữ nguyên.");
           } else {
             TienIchConsole::hienThiLoi("Đã hủy thao tác xóa ca.");
           }
@@ -1598,30 +1622,16 @@ public:
         maNVChon = dsNV[idx]->layMa();
       }
 
-      dvLichMau.capNhatPhanCong(thu, tenCa, maNVChon);
-
-      // Tự động đồng bộ sang ca tương ứng của Tuần kế tiếp
-      std::string ngayHienTai = TienIchNgay::layNgayHienTaiISO();
-      std::string t2TuanNay = TienIchNgay::layNgayThuHaiCuaTuan(ngayHienTai);
-      std::string t2TuanToi = TienIchNgay::congNgay(t2TuanNay, 7);
-      std::string ngayMucTieu = TienIchNgay::congNgay(t2TuanToi, thu - 2);
-
-      const CaTrucMau *cmMoi = dvLichMau.timCaMau(thu, tenCa);
-      std::string gBD = (cmMoi != nullptr) ? cmMoi->layGioBatDau() : "08:00";
-      std::string gKT = (cmMoi != nullptr) ? cmMoi->layGioKetThuc() : "13:30";
-
-      // Nếu tuần sau chưa được sinh ca, nhân bản toàn bộ tuần chuẩn sang tuần sau
-      if (dvCaTruc.layDanhSachCaTheoNgay(t2TuanToi).empty()) {
-        int soBoQua = 0;
-        dvLichMau.apDungChoTuan(t2TuanToi, dvCaTruc, soBoQua);
-      } else {
-        dvCaTruc.dongBoCaTheoLichMau(ngayMucTieu, tenCa, gBD, gKT, maNVChon);
+      if (!dvLichMau.capNhatPhanCong(thu, tenCa, maNVChon)) {
+        TienIchConsole::hienThiLoi("Không lưu được lịch mẫu. Dữ liệu được giữ nguyên.");
+        TienIchConsole::choPhimBatKy(); continue;
       }
-
-      std::string thongBao = "Đã lưu lịch chuẩn và tự động đổi lịch " +
-                             TienIchNgay::layTenThuDayDu(thu) + " tuần sau thành " +
-                             (maNVChon == "TRONG" ? "Để trống" : maNVChon) + "!";
-      TienIchConsole::hienThiThanhCong(thongBao);
+      const auto t2 = TienIchNgay::layNgayThuHaiCuaTuan(TienIchNgay::layNgayHienTaiISO());
+      const auto ngayMucTieu = TienIchNgay::congNgay(t2, 7 + thu - 2);
+      const auto cm = dvLichMau.timCaMau(thu, tenCa);
+      if (cm && dvCaTruc.dongBoCaTheoLichMau(ngayMucTieu, tenCa, cm->layGioBatDau(), cm->layGioKetThuc(), maNVChon))
+        TienIchConsole::hienThiThanhCong("Đã lưu lịch mẫu và đồng bộ ca tương ứng tuần sau.");
+      else TienIchConsole::hienThiLoi("Đã lưu lịch mẫu nhưng ca tuần sau chưa đổi do xung đột hoặc lỗi lưu. Kiểm tra lịch thực tế.");
       Sleep(1400);
     }
   }
@@ -2135,6 +2145,10 @@ public:
           if (trangThaiMoi == 0) {
             std::vector<std::string> thongBaoGiuLai;
             int soHuy = dvDatVe.xuLyKhiPhimNgungChieu(maPhim, thongBaoGiuLai);
+            if (soHuy < 0) {
+              TienIchConsole::hienThiLoi("Đã lưu trạng thái phim nhưng chưa lưu được lịch hủy. Bán vé bị khóa; kiểm tra và mở lại ứng dụng.");
+              TienIchConsole::choPhimBatKy(); return;
+            }
             std::cout << "\n\t\t";
             TienIchConsole::datMau(TienIchConsole::MAU_SAP_CHIEU);
             std::cout << "[HỆ THỐNG BẢO VỆ SUẤT CHIẾU KHI PHIM NGỪNG CHIẾU]:\n";
@@ -2168,7 +2182,7 @@ public:
         };
         dvPhim.coLichTuongLai = [&](const std::string &ma) { return dvDatVe.coSuatTuongLai(ma); };
         dvPhim.coLichSauNgay = [&](const std::string &ma,const std::string &ngay) { return dvDatVe.coSuatSauNgay(ma,ngay); };
-        dvPhim.onDoiTenPhim = [&](const std::string &ma, const std::string &tenMoi) { dvDatVe.capNhatTenPhimSuatChieu(ma, tenMoi); };
+        dvPhim.onDoiTenPhim = [&](const std::string &ma, const std::string &tenMoi) { return dvDatVe.capNhatTenPhimSuatChieu(ma, tenMoi); };
         dvPhim.hienThiDanhSach(5, "", true, onDoiTrangThai);
         break;
       }
@@ -2212,7 +2226,7 @@ public:
       TienIchConsole::veKhungGiua();
       TienIchConsole::veDongTrong();
       TienIchConsole::veDong("1. Bán vé tại quầy");
-      TienIchConsole::veDong("2. Báo cáo doanh số ca trực của tôi");
+      TienIchConsole::veDong("2. Báo cáo doanh số hôm nay của tôi");
       TienIchConsole::veDong("0. Đăng xuất và bàn giao ca");
       TienIchConsole::veDongTrong();
       TienIchConsole::veKhungDuoi();
@@ -2230,14 +2244,11 @@ public:
         std::string tenNV = nguoiDungHienTai->layHoTen();
         int soVe = 0, soHD = 0;
         double tongTien = 0.0;
-        dvDatVe.tinhDoanhThuCaTruc(tenNV, soVe, soHD, tongTien);
-
-        // Đồng bộ doanh thu vào hệ thống ca trực
-        dvCaTruc.capNhatDoanhThuCaHienTai(nguoiDungHienTai->layMa(), tongTien);
+        dvDatVe.tinhDoanhThuNhanVienTrongNgay(nguoiDungHienTai->layMa(), TienIchNgay::layNgayHienTaiISO(), soVe, soHD, tongTien);
 
         printf("\n");
         TienIchConsole::veKhungTren();
-        TienIchConsole::veDongGiua("BÁO CÁO DOANH SỐ CA TRỰC");
+        TienIchConsole::veDongGiua("BÁO CÁO DOANH SỐ HÔM NAY");
         TienIchConsole::veDong(std::string("Thu ngân: ") + tenNV + "  |  Ngày: " + TienIchNgay::dinhDangHienThi(TienIchNgay::layNgayHienTaiISO()));
         TienIchConsole::veKhungGiua();
         TienIchConsole::veDongTrong();
@@ -2245,7 +2256,7 @@ public:
         char bVe[128], bHD[128], bDT[128];
         snprintf(bVe, sizeof(bVe), "  • Tổng số vé đã bán:       %d vé", soVe);
         snprintf(bHD, sizeof(bHD), "  • Tổng số hóa đơn đã lập:  %d hóa đơn", soHD);
-        snprintf(bDT, sizeof(bDT), "  • TỔNG DOANH THU CA TRỰC:  %s VNĐ",
+        snprintf(bDT, sizeof(bDT), "  • TỔNG DOANH THU HÔM NAY:  %s VNĐ",
                  TienIchConsole::dinhDangTien(tongTien).c_str());
 
         TienIchConsole::veDong(bVe);

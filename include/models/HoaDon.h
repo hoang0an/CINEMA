@@ -13,13 +13,15 @@ private:
   std::string maHoaDon;
   std::string ngayLap;
   std::string tenNhanVien;
+  std::string maNhanVien, maCa, gioLap;
   DanhSachLienKet<Ve> dsVe;
   double tongTien;
 
 public:
-  HoaDon(std::string maHoaDon, std::string ngayLap, std::string tenNhanVien)
+  HoaDon(std::string maHoaDon, std::string ngayLap, std::string tenNhanVien,
+         std::string maNV = "", std::string ca = "", std::string gio = "")
       : maHoaDon(maHoaDon), ngayLap(ngayLap), tenNhanVien(tenNhanVien),
-        tongTien(0) {}
+        maNhanVien(maNV), maCa(ca), gioLap(gio), tongTien(0) {}
 
   void themVe(const Ve &v) {
     dsVe.themCuoi(v);
@@ -29,6 +31,9 @@ public:
   std::string layMaHoaDon() const { return maHoaDon; }
   std::string layNgayLap() const { return ngayLap; }
   std::string layTenNhanVien() const { return tenNhanVien; }
+  std::string layMaNhanVien() const { return maNhanVien; }
+  std::string layMaCa() const { return maCa; }
+  std::string layGioLap() const { return gioLap; }
   double layTongTien() const { return tongTien; }
   int laySoLuongVe() const { return dsVe.laySoLuong(); }
   const DanhSachLienKet<Ve>& layDanhSachVe() const { return dsVe; }
